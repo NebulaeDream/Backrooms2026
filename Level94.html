@@ -1,0 +1,1900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Level 94 · 画质分级</title>
+    <style>
+        /* 样式完全保持不变 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: #87CEEB;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #87CEEB;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        #inventory {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            background: rgba(10, 10, 10, 0.85);
+            padding: 6px;
+            border-radius: 14px;
+            border: 2px solid #b3a13b;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .inventory-slot {
+            width: 42px;
+            height: 42px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 2px solid #8a7a3a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #ffd966;
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+        }
+        
+        .inventory-slot.has-item {
+            border-color: #76ff03;
+        }
+        
+        .inventory-slot.active {
+            border-color: #FFD700;
+            box-shadow: 0 0 12px gold;
+            transform: scale(1.05);
+        }
+        
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #d4c541;
+            border-radius: 16px;
+            color: #ffd966;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .control-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #d4c541;
+            color: #1a1a1a;
+        }
+        
+        #jumpBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 120px;
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #d4c541;
+            border-radius: 16px;
+            color: #ffd966;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #jumpBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #d4c541;
+            color: #1a1a1a;
+        }
+        
+        #interactBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background: rgba(212, 197, 65, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 38px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #interactBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #ffd966;
+        }
+        
+        #useBtn {
+            position: fixed;
+            top: 110px;
+            right: 15px;
+            width: 55px;
+            height: 55px;
+            background: rgba(76, 175, 80, 0.95);
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #2a5a2a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #useBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2a5a2a;
+        }
+        
+        #dropBtn {
+            position: fixed;
+            top: 110px;
+            right: 80px;
+            width: 55px;
+            height: 55px;
+            background: #ff4444;
+            border: 3px solid white;
+            border-radius: 14px;
+            font-size: 26px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #aa2222;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #dropBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa2222;
+        }
+        
+        #flashlightToggleBtn {
+            position: fixed;
+            bottom: 100px;
+            right: 35px;
+            width: 55px;
+            height: 55px;
+            background: rgba(255, 215, 0, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 26px;
+            color: #1a1a1a;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .flashlight-on { background: rgba(255, 215, 0, 0.95); }
+        .flashlight-off { background: rgba(80, 80, 80, 0.95); color: #ccc; }
+        
+        .touch-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 500;
+            background: transparent;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        
+        .status-display {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            background: rgba(10, 10, 10, 0.85);
+            color: #ffd966;
+            padding: 10px 15px;
+            border-radius: 14px;
+            border: 2px solid #b3a13b;
+            font-size: 14px;
+            z-index: 2000;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            min-width: 160px;
+        }
+        
+        .status-display div {
+            margin-bottom: 5px;
+        }
+        
+        .sanity-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(50, 50, 50, 0.8);
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+            border: 1px solid #8a7a3a;
+        }
+        
+        .sanity-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00c8ff, #00ffaa);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        #interactionHint {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: #ffd966;
+            padding: 10px 22px;
+            border-radius: 40px;
+            display: none;
+            font-size: 17px;
+            font-weight: bold;
+            border: 2px solid #d4c541;
+            z-index: 2000;
+            pointer-events: none;
+        }
+        
+        #caughtMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(150, 0, 0, 0.9);
+            padding: 35px;
+            border-radius: 28px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 7000;
+            border: 3px solid #ff0000;
+            color: white;
+            pointer-events: none;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        #settingsBtn {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #d4c541;
+            border-radius: 12px;
+            color: #ffd966;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton {
+            position: fixed;
+            top: 70px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: #ffaa00;
+            border: 3px solid white;
+            border-radius: 12px;
+            color: black;
+            font-size: 22px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3001;
+            box-shadow: 0 4px 0 #aa7700;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa7700;
+        }
+        
+        #devConsole {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.98);
+            border: 3px solid #ffaa00;
+            border-radius: 18px;
+            padding: 25px;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 0 35px rgba(255,170,0,0.5);
+            pointer-events: auto;
+            width: 75%;
+            max-width: 350px;
+        }
+        
+        #devConsole input {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            background: #333;
+            border: 2px solid #ffaa00;
+            border-radius: 10px;
+            color: white;
+            outline: none;
+        }
+        
+        #devConsole button {
+            background: #ffaa00;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 17px;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            border-bottom: 4px solid #aa7700;
+        }
+        
+        #devConsole button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        #settingsPanel {
+            position: fixed;
+            top: 75px;
+            right: 12px;
+            width: 220px;
+            background: rgba(10, 10, 10, 0.98);
+            border: 3px solid #d4c541;
+            border-radius: 16px;
+            padding: 18px;
+            color: #ffd966;
+            z-index: 3500;
+            pointer-events: auto;
+            display: none;
+            backdrop-filter: blur(8px);
+        }
+        
+        .quality-option {
+            background: rgba(40, 40, 40, 0.9);
+            border: 2px solid #8a7a3a;
+            border-radius: 30px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .quality-option.active {
+            background: #d4c541;
+            color: #1a1a1a;
+        }
+        
+        .close-btn {
+            width: 100%;
+            padding: 10px;
+            background: #5a4e2b;
+            border: none;
+            border-radius: 30px;
+            color: #ffd966;
+            font-size: 15px;
+            margin-top: 12px;
+            cursor: pointer;
+            border-bottom: 3px solid #3a351a;
+        }
+        
+        .close-btn:active {
+            transform: translateY(2px);
+            border-bottom: none;
+        }
+        
+        #deathMessage, #sanityDeathMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 30px;
+            border-radius: 24px;
+            font-size: 22px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #d4c541;
+            color: #ffd966;
+            pointer-events: auto;
+        }
+        
+        #winMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 35px;
+            border-radius: 26px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #ff00ff;
+            color: #ffaaff;
+            pointer-events: auto;
+        }
+        
+        #winMessage button, #deathMessage button, #sanityDeathMessage button {
+            margin-top: 22px;
+            padding: 12px 35px;
+            background: #d4c541;
+            border: none;
+            border-radius: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a1a;
+            border-bottom: 4px solid #5a4e2b;
+            cursor: pointer;
+        }
+        
+        #winMessage button:active, #deathMessage button:active, #sanityDeathMessage button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        #deathOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0044aa;
+            display: none;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        #timeDisplay {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #ffd966;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 18px;
+            border: 2px solid #d4c541;
+            z-index: 2000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <div id="inventory">
+            <div class="inventory-slot" id="slot1"></div>
+            <div class="inventory-slot" id="slot2"></div>
+            <div class="inventory-slot" id="slot3"></div>
+            <div class="inventory-slot" id="slot4"></div>
+            <div class="inventory-slot" id="slot5"></div>
+            <div class="inventory-slot" id="slot6"></div>
+            <div class="inventory-slot" id="slot7"></div>
+            <div class="inventory-slot" id="slot8"></div>
+        </div>
+        
+        <div id="controls">
+            <div class="control-group"><button class="control-btn" id="forwardBtn">▲</button></div>
+            <div class="control-group">
+                <button class="control-btn" id="leftBtn">◀</button>
+                <button class="control-btn" id="backwardBtn">▼</button>
+                <button class="control-btn" id="rightBtn">▶</button>
+            </div>
+        </div>
+        
+        <button id="jumpBtn">⬆️</button>
+        <button id="interactBtn">✋</button>
+        <button id="useBtn">使用</button>
+        <button id="dropBtn">🗑️</button>
+        <button id="flashlightToggleBtn">🔦</button>
+        <button id="settingsBtn">⚙️</button>
+        <button id="devTButton">T</button>
+        
+        <div id="settingsPanel">
+            <div style="font-size:18px; font-weight:bold; margin-bottom:15px; text-align:center;">⚙️ 画质</div>
+            <div id="qualityLow" class="quality-option"><span>📱 低质</span><span>极致性能</span></div>
+            <div id="qualityMid" class="quality-option"><span>📲 中等</span><span>平衡</span></div>
+            <div id="qualityHigh" class="quality-option active"><span>💻 高质</span><span>视觉巅峰</span></div>
+            <button class="close-btn" id="closeSettingsBtn">关闭</button>
+        </div>
+        
+        <div id="interactionHint">🔍 点击手掌交互</div>
+        
+        <div id="timeDisplay">☀️ 白天</div>
+        
+        <div class="status-display">
+            <div>💧 杏仁水: <span id="almondCount">0</span></div>
+            <div>🔦 手电筒: <span id="flashlightOwned">无</span></div>
+            <div>🧠 理智:</div>
+            <div class="sanity-bar"><div id="sanityFill" class="sanity-fill" style="width:100%"></div></div>
+            <div>👾 <span id="monsterStatus">游荡</span></div>
+            <div>🎮 <span id="qualityStatus">高质</span></div>
+        </div>
+    </div>
+    
+    <div id="deathOverlay"></div>
+    
+    
+    <div id="deathMessage"><h2>👻 你死了</h2><p style="color:#ff6666;">小孩/小丑抓住了你</p><button onclick="location.reload()">重生</button></div>
+    <div id="sanityDeathMessage"><h2>💥 精神崩溃</h2><button onclick="location.reload()">重生</button></div>
+    
+    <div class="touch-area" id="touchArea"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        (function() {
+            "use strict";
+
+            // ==================== 游戏状态 ====================
+            const gameState = {
+                player: { x: 0, y: 1.6, z: 0 },
+                rotationY: 0,
+                items: { almondWater: 0 },
+                flashlightOn: false,
+                hasFlashlight: false,
+                nearItem: null,
+                nearCar: false,
+                nearRope: false,
+                nearRollerCoaster: false,
+                isAlive: true,
+                activeSlot: -1,
+                flashlightSlotIndex: -1,
+                quality: 'high',
+                sanity: 100,
+                sanityDrainRate: 0.02,
+                isJumping: false,
+                jumpVelocity: 0,
+                onGround: true,
+                isCaught: false,
+                catchStartTime: 0,
+                
+                // 场景控制
+                currentScene: 'grassland',
+                castlePos: { x: 600, z: 600 },
+                ropePos: { x: 600, z: 600 },
+                
+                // 日夜循环
+                dayTime: 60,
+                isDay: true,
+                transitionTime: 0,
+                
+                // 小孩系统
+                kids: [],
+                kidSpawnTimer: 0,
+                
+                // 车系统
+                carPos: { x: 200, z: -200 },
+                carSpeed: 12,
+                carMoving: false,
+                inCar: false,
+                carObject: null,
+                
+                // 游乐场
+                inPlayground: false,
+                lightsOn: true,
+                lightTimer: 10,
+                clownActive: false,
+                clownPos: { x: 700, y: 5.5, z: 700 },
+                clownVisible: true,
+                lookingAtClown: false
+            };
+
+            // ==================== Three.js 初始化 ====================
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(200, 1.8, -178);
+            
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = false;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // ==================== 灯光系统 ====================
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.2);
+            sunLight.position.set(10, 20, 10);
+            scene.add(sunLight);
+            
+            // 游乐场灯光
+            const parkLights = [];
+            
+            const flashlight = new THREE.SpotLight(0xfff0b0, 3.0);
+            flashlight.angle = 0.4;
+            flashlight.penumbra = 0.3;
+            flashlight.distance = 60;
+            scene.add(flashlight);
+            flashlight.visible = false;
+            
+            const flashlightTarget = new THREE.Object3D();
+            flashlight.target = flashlightTarget;
+            scene.add(flashlightTarget);
+
+            // ==================== 玩家身体 ====================
+            const playerBody = new THREE.Group();
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0xffaa33 });
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.4), torsoMat);
+            torso.position.y = 0.7;
+            playerBody.add(torso);
+            playerBody.position.set(0, 0, 0);
+            scene.add(playerBody);
+
+            // ==================== 手持物品模型（固定在相机右下角）====================
+            const heldItemContainer = new THREE.Group();
+            
+            function createHeldItemModel(type) {
+                while(heldItemContainer.children.length > 0) {
+                    heldItemContainer.remove(heldItemContainer.children[0]);
+                }
+                
+                if (!type) return;
+                
+                let model;
+                if (type === '🧪') {
+                    model = new THREE.Group();
+                    const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8), canMat);
+                    body.position.y = 0.4;
+                    model.add(body);
+                    
+                    const topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6), topMat);
+                    top.position.y = 0.85;
+                    model.add(top);
+                }
+                else if (type === '🔦') {
+                    model = new THREE.Group();
+                    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8), bodyMat);
+                    body.rotation.x = Math.PI / 2;
+                    body.position.set(0, 0, 0);
+                    model.add(body);
+                    
+                    const headMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8), headMat);
+                    head.rotation.x = Math.PI / 2;
+                    head.position.set(0, 0, 0.7);
+                    model.add(head);
+                }
+                
+                if (model) {
+                    model.scale.set(0.4, 0.4, 0.4);
+                    model.rotation.set(0.2, 0.5, 0.1);
+                    heldItemContainer.add(model);
+                }
+            }
+            
+            heldItemContainer.position.set(0.6, -0.4, -0.8);
+            camera.add(heldItemContainer);
+            scene.add(camera);
+
+            // ==================== 画质设置 ====================
+            function applyQualitySettings(quality) {
+                gameState.quality = quality;
+                document.getElementById('qualityStatus').textContent = 
+                    quality === 'low' ? '低质' : quality === 'mid' ? '中等' : '高质';
+                
+                document.querySelectorAll('.quality-option').forEach(el => el.classList.remove('active'));
+                if(quality === 'low') document.getElementById('qualityLow').classList.add('active');
+                if(quality === 'mid') document.getElementById('qualityMid').classList.add('active');
+                if(quality === 'high') document.getElementById('qualityHigh').classList.add('active');
+                
+                if (quality === 'low') {
+                    ambientLight.intensity = 0.8;
+                    sunLight.intensity = 1.5;
+                    renderer.shadowMap.enabled = false;
+                    renderer.setPixelRatio(1);
+                    flashlight.intensity = 2.0;
+                } else if (quality === 'mid') {
+                    ambientLight.intensity = 0.5;
+                    sunLight.intensity = 1.2;
+                    renderer.shadowMap.enabled = false;
+                    renderer.setPixelRatio(1.5);
+                    flashlight.intensity = 2.5;
+                } else {
+                    ambientLight.intensity = 0.3;
+                    sunLight.intensity = 1.0;
+                    renderer.shadowMap.enabled = true;
+                    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                    renderer.setPixelRatio(window.devicePixelRatio);
+                    flashlight.intensity = 3.0;
+                    
+                    sunLight.castShadow = true;
+                    sunLight.shadow.mapSize.width = 1024;
+                    sunLight.shadow.mapSize.height = 1024;
+                    sunLight.shadow.camera.near = 0.5;
+                    sunLight.shadow.camera.far = 500;
+                    sunLight.shadow.camera.left = -100;
+                    sunLight.shadow.camera.right = 100;
+                    sunLight.shadow.camera.top = 100;
+                    sunLight.shadow.camera.bottom = -100;
+                }
+            }
+
+            // ==================== 创建房子 ====================
+            function createHouse(x, z) {
+                const houseGroup = new THREE.Group();
+                
+                // 墙壁 - 木质色
+                const wallMat = new THREE.MeshStandardMaterial({ color: 0xDEB887 });
+                
+                // 前墙
+                const frontWall = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 0.3), wallMat);
+                frontWall.position.set(x, 1.5, z - 2.5);
+                if (gameState.quality === 'high') frontWall.castShadow = true;
+                houseGroup.add(frontWall);
+                
+                // 后墙
+                const backWall = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 0.3), wallMat);
+                backWall.position.set(x, 1.5, z + 2.5);
+                if (gameState.quality === 'high') backWall.castShadow = true;
+                houseGroup.add(backWall);
+                
+                // 左墙
+                const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 5), wallMat);
+                leftWall.position.set(x - 2.5, 1.5, z);
+                if (gameState.quality === 'high') leftWall.castShadow = true;
+                houseGroup.add(leftWall);
+                
+                // 右墙
+                const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3, 5), wallMat);
+                rightWall.position.set(x + 2.5, 1.5, z);
+                if (gameState.quality === 'high') rightWall.castShadow = true;
+                houseGroup.add(rightWall);
+                
+                // 屋顶 - 红色
+                const roofMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(3.5, 1.5, 4), roofMat);
+                roof.position.set(x, 3.3, z);
+                roof.rotation.y = Math.PI / 4;
+                if (gameState.quality === 'high') roof.castShadow = true;
+                houseGroup.add(roof);
+                
+                // 门 - 棕色
+                const doorMat = new THREE.MeshStandardMaterial({ color: 0x5D3A1A });
+                const door = new THREE.Mesh(new THREE.BoxGeometry(1, 1.8, 0.2), doorMat);
+                door.position.set(x, 0.9, z - 2.4);
+                if (gameState.quality === 'high') door.castShadow = true;
+                houseGroup.add(door);
+                
+                // 窗户 - 蓝色
+                const windowMat = new THREE.MeshStandardMaterial({ color: 0x87CEEB });
+                const window1 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 0.2), windowMat);
+                window1.position.set(x - 1, 1.8, z - 2.4);
+                if (gameState.quality === 'high') window1.castShadow = true;
+                houseGroup.add(window1);
+                
+                const window2 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 0.2), windowMat);
+                window2.position.set(x + 1, 1.8, z - 2.4);
+                if (gameState.quality === 'high') window2.castShadow = true;
+                houseGroup.add(window2);
+                
+                return houseGroup;
+            }
+
+            // ==================== 创建草原 ====================
+            function createGrassland() {
+                gameState.castlePos = { x: 400, z: 400 };
+                gameState.ropePos = { x: 400, z: 400 };
+                
+                const groundMat = new THREE.MeshStandardMaterial({ color: 0x7CB342 });
+                const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = 0;
+                if (gameState.quality === 'high') {
+                    ground.receiveShadow = true;
+                }
+                scene.add(ground);
+                
+                let hillCount;
+                if (gameState.quality === 'low') hillCount = 15;
+                else if (gameState.quality === 'mid') hillCount = 25;
+                else hillCount = 40;
+                
+                for (let i = 0; i < hillCount; i++) {
+                    const hillMat = new THREE.MeshStandardMaterial({ color: 0x6A994E });
+                    const hill = new THREE.Mesh(new THREE.ConeGeometry(25 + Math.random()*20, 8 + Math.random()*6, gameState.quality === 'low' ? 5 : 8), hillMat);
+                    hill.position.x = (Math.random() - 0.5) * 1000;
+                    hill.position.z = (Math.random() - 0.5) * 1000;
+                    hill.position.y = 3;
+                    if (gameState.quality === 'high') {
+                        hill.castShadow = true;
+                        hill.receiveShadow = true;
+                    }
+                    scene.add(hill);
+                }
+                
+                // ==================== 添加随机房子 ====================
+                let houseCount;
+                if (gameState.quality === 'low') houseCount = 5;
+                else if (gameState.quality === 'mid') houseCount = 10;
+                else houseCount = 15;
+                
+                for (let i = 0; i < houseCount; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 800;
+                        z = (Math.random() - 0.5) * 800;
+                    } while (Math.sqrt((x - 200)**2 + (z + 200)**2) < 30); // 避开出生点
+                    
+                    const house = createHouse(x, z);
+                    scene.add(house);
+                }
+                
+                // 面包车
+                const carGroup = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
+                
+                const body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.5, 5.5), bodyMat);
+                body.position.y = 0.75;
+                if (gameState.quality === 'high') body.castShadow = true;
+                carGroup.add(body);
+                
+                const front = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.2, 1.5), bodyMat);
+                front.position.set(0, 0.8, 2.8);
+                if (gameState.quality === 'high') front.castShadow = true;
+                carGroup.add(front);
+                
+                const windowMat = new THREE.MeshStandardMaterial({ color: 0x88AAFF });
+                for (let i = -0.8; i <= 0.8; i+=1.6) {
+                    const window1 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.6, 0.3), windowMat);
+                    window1.position.set(i, 1.3, 1.5);
+                    if (gameState.quality === 'high') window1.castShadow = true;
+                    carGroup.add(window1);
+                }
+                
+                const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                const positions = [[-1.4, 0.4, 2.0], [1.4, 0.4, 2.0], [-1.4, 0.4, -1.8], [1.4, 0.4, -1.8]];
+                positions.forEach(pos => {
+                    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.4, gameState.quality === 'low' ? 4 : 6), wheelMat);
+                    wheel.rotation.z = Math.PI/2;
+                    wheel.position.set(pos[0], pos[1], pos[2]);
+                    if (gameState.quality === 'high') wheel.castShadow = true;
+                    carGroup.add(wheel);
+                });
+                
+                carGroup.position.set(200, 0.3, -200);
+                carGroup.userData = { type: 'car' };
+                scene.add(carGroup);
+                gameState.carObject = carGroup;
+                gameState.carPos = { x: 200, z: -200 };
+                
+                // 车周围物品
+                for (let i = 0; i < 3; i++) {
+                    createAlmondWater(200 + 3 + i, -200 + 2);
+                    createFlashlightItem(200 - 3 - i, -200 - 2);
+                }
+                
+                // 绳子
+                const ropeMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 50, gameState.quality === 'low' ? 4 : 6), ropeMat);
+                rope.position.set(600, 25, 600);
+                rope.userData = { type: 'rope' };
+                if (gameState.quality === 'high') rope.castShadow = true;
+                scene.add(rope);
+                
+                gameState.player.x = 200;
+                gameState.player.z = -180;
+                gameState.player.y = 1.6;
+                camera.position.set(200, 1.8, -178);
+            }
+
+            // ==================== 创建小孩 ====================
+            function createKid(x, z) {
+                const group = new THREE.Group();
+                
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xE0A080 });
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.0, 0.4), bodyMat);
+                body.position.y = 0.5;
+                if (gameState.quality === 'high') body.castShadow = true;
+                group.add(body);
+                
+                const headMat = new THREE.MeshStandardMaterial({ color: 0xF0C0A0 });
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, gameState.quality === 'low' ? 4 : 6), headMat);
+                head.position.y = 1.1;
+                if (gameState.quality === 'high') head.castShadow = true;
+                group.add(head);
+                
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0x330000 });
+                const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 4), eyeMat);
+                eye1.position.set(-0.15, 1.15, 0.2);
+                group.add(eye1);
+                
+                const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.08, 4), eyeMat);
+                eye2.position.set(0.15, 1.15, 0.2);
+                group.add(eye2);
+                
+                group.position.set(x, 0.5, z);
+                group.userData = { speed: 0.2 };
+                
+                scene.add(group);
+                gameState.kids.push(group);
+                return group;
+            }
+
+            // ==================== 创建巨型游乐场 ====================
+            function createPlayground() {
+                const groundMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+                const ground = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.set(600, 0, 600);
+                if (gameState.quality === 'high') ground.receiveShadow = true;
+                scene.add(ground);
+                
+                const wallMat = new THREE.MeshStandardMaterial({ color: 0x8866aa });
+                createWall(450, 600, 2, 300, wallMat);
+                createWall(750, 600, 2, 300, wallMat);
+                createWall(600, 450, 300, 2, wallMat);
+                createWall(600, 750, 300, 2, wallMat);
+                
+                let trackCount;
+                if (gameState.quality === 'low') trackCount = 15;
+                else if (gameState.quality === 'mid') trackCount = 25;
+                else trackCount = 40;
+                
+                const trackMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+                for (let i = 0; i < trackCount; i++) {
+                    const track = new THREE.Mesh(new THREE.BoxGeometry(2, 0.3, 20), trackMat);
+                    track.position.set(540 + i * 5, 8, 640);
+                    if (gameState.quality === 'high') {
+                        track.castShadow = true;
+                        track.receiveShadow = true;
+                    }
+                    scene.add(track);
+                }
+                
+                const coasterGroup = new THREE.Group();
+                const cartMat = new THREE.MeshStandardMaterial({ color: 0xFF4444 });
+                const cart = new THREE.Mesh(new THREE.BoxGeometry(3, 1.5, 5), cartMat);
+                cart.position.y = 0.75;
+                if (gameState.quality === 'high') cart.castShadow = true;
+                coasterGroup.add(cart);
+                
+                const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                for (let i = -1.2; i <= 1.2; i+=2.4) {
+                    for (let j = -1.8; j <= 1.8; j+=3.6) {
+                        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.3, gameState.quality === 'low' ? 4 : 6), wheelMat);
+                        wheel.rotation.z = Math.PI/2;
+                        wheel.position.set(i, 0.2, j);
+                        if (gameState.quality === 'high') wheel.castShadow = true;
+                        coasterGroup.add(wheel);
+                    }
+                }
+                
+                coasterGroup.position.set(540, 8.5, 640);
+                coasterGroup.userData = { type: 'rollerCoaster' };
+                scene.add(coasterGroup);
+                
+                let cabinCount;
+                if (gameState.quality === 'low') cabinCount = 4;
+                else if (gameState.quality === 'mid') cabinCount = 6;
+                else cabinCount = 8;
+                
+                const wheelGroup = new THREE.Group();
+                const standMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+                const stand = new THREE.Mesh(new THREE.BoxGeometry(2, 25, 2), standMat);
+                stand.position.y = 12.5;
+                if (gameState.quality === 'high') stand.castShadow = true;
+                wheelGroup.add(stand);
+                
+                for (let i = 0; i < cabinCount; i++) {
+                    const angle = (i/cabinCount) * Math.PI * 2;
+                    const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.5, 2.5), new THREE.MeshStandardMaterial({ color: 0xFFAA00 }));
+                    cabin.position.set(Math.cos(angle)*15, 12.5 + Math.sin(angle)*15, 0);
+                    if (gameState.quality === 'high') cabin.castShadow = true;
+                    wheelGroup.add(cabin);
+                }
+                wheelGroup.position.set(660, 0, 660);
+                scene.add(wheelGroup);
+                
+                let horseCount;
+                if (gameState.quality === 'low') horseCount = 6;
+                else if (gameState.quality === 'mid') horseCount = 9;
+                else horseCount = 12;
+                
+                const carouselBase = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 1, gameState.quality === 'low' ? 8 : 12), new THREE.MeshStandardMaterial({ color: 0xFF69B4 }));
+                carouselBase.position.set(540, 0.5, 560);
+                if (gameState.quality === 'high') carouselBase.receiveShadow = true;
+                scene.add(carouselBase);
+                
+                for (let i = 0; i < horseCount; i++) {
+                    const angle = (i/horseCount) * Math.PI * 2;
+                    const horse = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.5, 1), new THREE.MeshStandardMaterial({ color: 0xAA8866 }));
+                    horse.position.set(540 + Math.cos(angle)*10, 1.5, 560 + Math.sin(angle)*10);
+                    if (gameState.quality === 'high') horse.castShadow = true;
+                    scene.add(horse);
+                }
+                
+                let lightCount;
+                if (gameState.quality === 'low') lightCount = 8;
+                else if (gameState.quality === 'mid') lightCount = 15;
+                else lightCount = 30;
+                
+                for (let i = 0; i < lightCount; i++) {
+                    const light = new THREE.PointLight(0xffaa66, gameState.quality === 'high' ? 1.0 : 0.8, gameState.quality === 'high' ? 80 : 60);
+                    light.position.set(600 + (Math.random()-0.5)*150, 8, 600 + (Math.random()-0.5)*150);
+                    if (gameState.quality === 'high') light.castShadow = true;
+                    scene.add(light);
+                    parkLights.push(light);
+                }
+                
+                const clownGroup = new THREE.Group();
+                
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 6, gameState.quality === 'low' ? 6 : 8), new THREE.MeshStandardMaterial({ color: 0xFF0000 }));
+                body.position.y = 3;
+                if (gameState.quality === 'high') body.castShadow = true;
+                clownGroup.add(body);
+                
+                const head = new THREE.Mesh(new THREE.SphereGeometry(2, gameState.quality === 'low' ? 6 : 8), new THREE.MeshStandardMaterial({ color: 0xFFFFFF }));
+                head.position.y = 6.5;
+                if (gameState.quality === 'high') head.castShadow = true;
+                clownGroup.add(head);
+                
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xFF0000, emissive: 0x330000 });
+                const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.5, gameState.quality === 'low' ? 4 : 6), eyeMat);
+                eye1.position.set(-0.8, 7.0, 1.8);
+                clownGroup.add(eye1);
+                
+                const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.5, gameState.quality === 'low' ? 4 : 6), eyeMat);
+                eye2.position.set(0.8, 7.0, 1.8);
+                clownGroup.add(eye2);
+                
+                for (let i = 0; i < (gameState.quality === 'low' ? 6 : 12); i++) {
+                    const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.4, 0.4), new THREE.MeshStandardMaterial({ color: 0xFFFFFF }));
+                    tooth.position.set(-1.0 + i*0.18, 5.8, 1.9);
+                    if (gameState.quality === 'high') tooth.castShadow = true;
+                    clownGroup.add(tooth);
+                }
+                
+                clownGroup.position.set(700, 0, 700);
+                clownGroup.userData = { type: 'clown' };
+                scene.add(clownGroup);
+                
+                gameState.clownPos = { x: 700, y: 6.5, z: 700 };
+                
+                let itemCount;
+                if (gameState.quality === 'low') itemCount = 4;
+                else if (gameState.quality === 'mid') itemCount = 7;
+                else itemCount = 10;
+                
+                for (let i = 0; i < itemCount; i++) {
+                    const x = 600 + (Math.random() - 0.5) * 200;
+                    const z = 600 + (Math.random() - 0.5) * 200;
+                    if (Math.random() < 0.5) {
+                        createAlmondWater(x, z);
+                    } else {
+                        createFlashlightItem(x, z);
+                    }
+                }
+                
+                return { coaster: coasterGroup, clown: clownGroup };
+            }
+
+            function createWall(x, z, width, depth, material) {
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(width, 15, depth), material);
+                wall.position.set(x, 7.5, z);
+                if (gameState.quality === 'high') {
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                }
+                scene.add(wall);
+            }
+
+            // ==================== 物品 ====================
+            function createAlmondWater(x, z) {
+                const group = new THREE.Group();
+                const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, gameState.quality === 'low' ? 6 : 8), canMat);
+                body.position.y = 0.4;
+                if (gameState.quality === 'high') body.castShadow = true;
+                group.add(body);
+                
+                const topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, gameState.quality === 'low' ? 4 : 6), topMat);
+                top.position.y = 0.85;
+                if (gameState.quality === 'high') top.castShadow = true;
+                group.add(top);
+                
+                group.position.set(x, 0.4, z);
+                group.userData = { type: 'almond' };
+                scene.add(group);
+                return group;
+            }
+
+            function createFlashlightItem(x, z) {
+                const group = new THREE.Group();
+                
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0, gameState.quality === 'low' ? 6 : 8), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+                body.rotation.x = Math.PI / 2;
+                body.position.set(0, 0, 0);
+                if (gameState.quality === 'high') body.castShadow = true;
+                group.add(body);
+                
+                const head = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, gameState.quality === 'low' ? 6 : 8), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+                head.rotation.x = Math.PI / 2;
+                head.position.set(0, 0, 0.65);
+                if (gameState.quality === 'high') head.castShadow = true;
+                group.add(head);
+                
+                group.position.set(x, 0.5, z);
+                group.userData = { type: 'flashlight' };
+                scene.add(group);
+                return group;
+            }
+
+            // ==================== 更新手持物品 ====================
+            function updateHeldItem() {
+                if (gameState.activeSlot === -1) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                
+                const slot = document.getElementById('slot'+(gameState.activeSlot+1));
+                if (!slot || !slot.classList.contains('has-item')) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                
+                const itemType = slot.textContent;
+                createHeldItemModel(itemType);
+            }
+
+            // ==================== 构建场景 ====================
+            let playgroundObjects = null;
+            
+            function buildScene() {
+                createGrassland();
+                
+                gameState.player.x = 200;
+                gameState.player.z = -180;
+                gameState.player.y = 1.6;
+                camera.position.set(200, 1.8, -178);
+                
+                applyQualitySettings('high');
+                updateHeldItem();
+            }
+
+            // ==================== 切换场景 ====================
+            function switchToPlayground() {
+                gameState.currentScene = 'playground';
+                gameState.inPlayground = true;
+                
+                playgroundObjects = createPlayground();
+                
+                gameState.player.x = 600;
+                gameState.player.z = 600;
+                gameState.player.y = 1.6;
+                
+                gameState.lightsOn = true;
+                gameState.lightTimer = 10;
+            }
+
+            // ==================== 碰撞检测 ====================
+            function checkCollision(newX, newZ) {
+                if (gameState.currentScene === 'grassland') {
+                    return Math.abs(newX) > 580 || Math.abs(newZ) > 580;
+                } else {
+                    return newX < 450 || newX > 750 || newZ < 450 || newZ > 750;
+                }
+            }
+
+            // ==================== 蓝色死亡遮罩 ====================
+            const deathOverlay = document.getElementById('deathOverlay');
+
+            function startDeathSequence() {
+                deathOverlay.style.display = 'block';
+                setTimeout(() => location.reload(), 1000);
+            }
+
+            // ==================== UI更新 ====================
+            function updateUI() {
+                document.getElementById('almondCount').textContent = gameState.items.almondWater;
+                document.getElementById('flashlightOwned').textContent = gameState.hasFlashlight ? '🔦有' : '无';
+                document.getElementById('sanityFill').style.width = gameState.sanity + '%';
+                
+                if (gameState.currentScene === 'grassland') {
+                    document.getElementById('timeDisplay').innerHTML = gameState.isDay ? '☀️ 白天' : '🌙 黑夜';
+                } else {
+                    document.getElementById('timeDisplay').innerHTML = gameState.lightsOn ? '💡 灯亮' : '🌑 灯灭';
+                }
+                
+                let monsterText = '';
+                if (gameState.currentScene === 'grassland') {
+                    monsterText = gameState.kids.length > 0 ? '👹 小孩出没' : '👁️ 安全';
+                } else {
+                    monsterText = gameState.clownActive ? '🔴 小丑追逐' : '👁️ 安静';
+                }
+                document.getElementById('monsterStatus').textContent = monsterText;
+                
+                const sanityFill = document.getElementById('sanityFill');
+                if(gameState.sanity > 60) sanityFill.style.background = 'linear-gradient(90deg, #00c8ff, #00ffaa)';
+                else if(gameState.sanity > 30) sanityFill.style.background = 'linear-gradient(90deg, #ffaa00, #ffdd00)';
+                else sanityFill.style.background = 'linear-gradient(90deg, #ff5500, #ff0000)';
+                
+                for(let i=1;i<=8;i++) {
+                    const slot = document.getElementById('slot'+i);
+                    slot.textContent = '';
+                    slot.classList.remove('has-item', 'active');
+                }
+                
+                let slotIdx = 0;
+                for(let i=0; i<gameState.items.almondWater; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🧪';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                if(gameState.hasFlashlight && slotIdx<8) {
+                    document.getElementById('slot'+(slotIdx+1)).textContent = '🔦';
+                    document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                    gameState.flashlightSlotIndex = slotIdx;
+                    slotIdx++;
+                }
+                if(gameState.activeSlot !== -1) {
+                    const active = document.getElementById('slot'+(gameState.activeSlot+1));
+                    if(active) active.classList.add('active');
+                }
+                
+                const fb = document.getElementById('flashlightToggleBtn');
+                if(gameState.activeSlot === gameState.flashlightSlotIndex && gameState.hasFlashlight) {
+                    fb.style.display = 'flex';
+                    fb.innerHTML = gameState.flashlightOn ? '🔦' : '🔦';
+                    fb.className = gameState.flashlightOn ? 'flashlight-on' : 'flashlight-off';
+                } else fb.style.display = 'none';
+                
+                updateHeldItem();
+            }
+
+            function handleJump() {
+                if(gameState.onGround && !gameState.isCaught) {
+                    // 如果在车里，按跳跃键下车
+                    if (gameState.inCar) {
+                        gameState.inCar = false;
+                        playerBody.visible = true;
+                        // 下车时稍微偏移一下位置，避免卡在车里
+                        gameState.player.x = gameState.carPos.x + 2;
+                        gameState.player.z = gameState.carPos.z;
+                        return;
+                    }
+                    
+                    // 正常跳跃
+                    gameState.isJumping = true;
+                    gameState.jumpVelocity = 0.28;
+                    gameState.onGround = false;
+                }
+            }
+
+            function updateJump() {
+                if(gameState.isJumping) {
+                    gameState.player.y += gameState.jumpVelocity;
+                    gameState.jumpVelocity -= 0.016;
+                    if (gameState.player.y <= 1.6) {
+                        gameState.player.y = 1.6;
+                        gameState.isJumping = false;
+                        gameState.jumpVelocity = 0;
+                        gameState.onGround = true;
+                    }
+                }
+            }
+
+            function useItem() {
+                if(!gameState.isAlive || gameState.isCaught) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement) return;
+                
+                const itemType = slotElement.textContent;
+                
+                if (itemType === '🧪' && gameState.items.almondWater > 0) {
+                    gameState.items.almondWater--;
+                    gameState.sanity = Math.min(100, gameState.sanity + 40);
+                    updateUI();
+                }
+            }
+
+            function dropItem() {
+                if(!gameState.isAlive || gameState.isCaught) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement || !slotElement.classList.contains('has-item')) return;
+                
+                const itemType = slotElement.textContent;
+                
+                if (itemType === '🧪' && gameState.items.almondWater > 0) {
+                    gameState.items.almondWater--;
+                    createAlmondWater(gameState.player.x, gameState.player.z);
+                    gameState.activeSlot = -1;
+                    updateUI();
+                } else if (itemType === '🔦' && gameState.hasFlashlight) {
+                    gameState.hasFlashlight = false;
+                    gameState.flashlightOn = false;
+                    createFlashlightItem(gameState.player.x, gameState.player.z);
+                    gameState.activeSlot = -1;
+                    updateUI();
+                }
+            }
+
+            // ==================== 修复后的交互函数 ====================
+            function interactHandler() {
+                if(!gameState.isAlive || gameState.isCaught) return;
+                
+                // 先检查是否在游乐场坐过山车
+                if (gameState.currentScene === 'playground' && gameState.nearRollerCoaster) {
+                    document.getElementById('winMessage').style.display = 'block';
+                    gameState.isAlive = false;
+                    return;
+                }
+                
+                // 检查绳子
+                if (gameState.nearRope && gameState.currentScene === 'grassland') {
+                    switchToPlayground();
+                    return;
+                }
+                
+                // 检查车
+                if (gameState.nearCar && !gameState.inCar && !gameState.carMoving) {
+                    gameState.inCar = true;
+                    playerBody.visible = false;
+                    return;
+                }
+                
+                // 检查附近物品
+                let foundItem = false;
+                scene.traverse(obj => {
+                    if (foundItem) return;
+                    if (obj.userData && (obj.userData.type === 'almond' || obj.userData.type === 'flashlight')) {
+                        const dist = Math.sqrt(
+                            (gameState.player.x - obj.position.x)**2 + 
+                            (gameState.player.z - obj.position.z)**2
+                        );
+                        if (dist < 2) {
+                            if (obj.userData.type === 'almond') {
+                                gameState.items.almondWater++;
+                                scene.remove(obj);
+                                foundItem = true;
+                                updateUI();
+                            } else if (obj.userData.type === 'flashlight' && !gameState.hasFlashlight) {
+                                gameState.hasFlashlight = true;
+                                gameState.flashlightOn = false;
+                                scene.remove(obj);
+                                foundItem = true;
+                                updateUI();
+                            }
+                        }
+                    }
+                });
+            }
+
+            function initDevTools() {
+                const devTButton = document.getElementById('devTButton');
+                const devConsole = document.createElement('div');
+                devConsole.id = 'devConsole';
+                devConsole.innerHTML = `
+                    <div style="color:#ffaa00; font-size:22px; font-weight:bold;">⚡ 开发者</div>
+                    <input type="text" id="devInput" placeholder="give almond / give flashlight / night / day">
+                    <button id="closeDevBtn">关闭</button>
+                `;
+                document.body.appendChild(devConsole);
+                
+                const devInput = document.getElementById('devInput');
+                const closeBtn = document.getElementById('closeDevBtn');
+                
+                devTButton.addEventListener('click', () => {
+                    devConsole.style.display = 'flex';
+                });
+                
+                devInput.addEventListener('keypress', (e) => {
+                    if(e.key === 'Enter') {
+                        const cmd = devInput.value.trim();
+                        if(cmd === 'give almond') {
+                            gameState.items.almondWater++;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            devInput.value = '';
+                            alert('✅ 获得杏仁水');
+                        } else if(cmd === 'give flashlight') {
+                            gameState.hasFlashlight = true;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            devInput.value = '';
+                            alert('✅ 获得手电筒');
+                        } else if(cmd === 'night') {
+                            gameState.isDay = false;
+                            gameState.dayTime = 60;
+                            devConsole.style.display = 'none';
+                            devInput.value = '';
+                        } else if(cmd === 'day') {
+                            gameState.isDay = true;
+                            gameState.dayTime = 60;
+                            devConsole.style.display = 'none';
+                            devInput.value = '';
+                        } else alert('未知命令');
+                    }
+                });
+                
+                closeBtn.addEventListener('click', () => {
+                    devConsole.style.display = 'none';
+                    devInput.value = '';
+                });
+            }
+
+            // ==================== 触摸滑动 ====================
+            const touchArea = document.getElementById('touchArea');
+            let lastX = 0;
+            
+            touchArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+            
+            touchArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - lastX;
+                gameState.rotationY -= dx * 0.01;
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+
+            // ==================== 键盘 ====================
+            const keys = { w: false, s: false, a: false, d: false };
+            
+            document.addEventListener('keydown', (e) => {
+                if(gameState.isCaught) return;
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    // 如果在车里，不能移动
+                    if (!gameState.inCar) {
+                        keys[k] = true;
+                    }
+                    e.preventDefault();
+                } else if(k === ' ') {
+                    handleJump();
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = false;
+                    e.preventDefault();
+                }
+            });
+            
+            document.getElementById('forwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.inCar) keys.w = true; });
+            document.getElementById('forwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.w = false; });
+            document.getElementById('backwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.inCar) keys.s = true; });
+            document.getElementById('backwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.s = false; });
+            document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.inCar) keys.a = true; });
+            document.getElementById('leftBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.a = false; });
+            document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.inCar) keys.d = true; });
+            document.getElementById('rightBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.d = false; });
+            
+            document.getElementById('jumpBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleJump(); });
+            document.getElementById('jumpBtn').addEventListener('touchend', (e) => { e.preventDefault(); });
+            
+            document.getElementById('interactBtn').addEventListener('click', interactHandler);
+            document.getElementById('interactBtn').addEventListener('touchstart', (e) => { e.preventDefault(); interactHandler(); });
+            
+            document.getElementById('useBtn').addEventListener('click', useItem);
+            document.getElementById('useBtn').addEventListener('touchstart', (e) => { e.preventDefault(); useItem(); });
+            
+            document.getElementById('dropBtn').addEventListener('click', dropItem);
+            document.getElementById('dropBtn').addEventListener('touchstart', (e) => { e.preventDefault(); dropItem(); });
+            
+            document.getElementById('flashlightToggleBtn').addEventListener('click', () => {
+                if(gameState.hasFlashlight && gameState.activeSlot === gameState.flashlightSlotIndex) {
+                    gameState.flashlightOn = !gameState.flashlightOn;
+                }
+                updateUI();
+            });
+            
+            document.querySelectorAll('.inventory-slot').forEach((slot, idx) => {
+                slot.addEventListener('click', () => {
+                    if(slot.classList.contains('has-item')) {
+                        document.querySelectorAll('.inventory-slot').forEach(s => s.classList.remove('active'));
+                        slot.classList.add('active');
+                        gameState.activeSlot = idx;
+                    }
+                    updateUI();
+                });
+            });
+            
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+            
+            settingsBtn.onclick = () => {
+                settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+            };
+            
+            document.getElementById('closeSettingsBtn').onclick = () => {
+                settingsPanel.style.display = 'none';
+            };
+            
+            document.getElementById('qualityLow').onclick = () => applyQualitySettings('low');
+            document.getElementById('qualityMid').onclick = () => applyQualitySettings('mid');
+            document.getElementById('qualityHigh').onclick = () => applyQualitySettings('high');
+
+            let lastTime = performance.now();
+            let catchStartTime = 0;
+            
+            function updatePlayer() {
+                const now = performance.now();
+                const deltaTime = Math.min(0.1, (now - lastTime) / 1000);
+                lastTime = now;
+                
+                if(!gameState.isAlive) return;
+                
+                if(gameState.isCaught) {
+                    if(catchStartTime === 0) catchStartTime = now;
+                    if(now - catchStartTime >= 1000) {
+                        startDeathSequence();
+                    }
+                    return;
+                }
+                
+                // 草原逻辑
+                if (gameState.currentScene === 'grassland') {
+                    gameState.dayTime -= deltaTime;
+                    if (gameState.dayTime <= 0) {
+                        gameState.isDay = !gameState.isDay;
+                        gameState.dayTime = 60;
+                        gameState.transitionTime = 3;
+                    }
+                    
+                    if (gameState.transitionTime > 0) {
+                        gameState.transitionTime -= deltaTime;
+                        const targetColor = gameState.isDay ? 0x87CEEB : 0x0a0a2a;
+                        scene.background.lerp(new THREE.Color(targetColor), 0.1);
+                    }
+                    
+                    if (!gameState.isDay) {
+    gameState.kidSpawnTimer += deltaTime;
+    if (gameState.kidSpawnTimer > 2 && gameState.kids.length < 8) {
+        gameState.kidSpawnTimer = 0;
+        for (let i = 0; i < 2; i++) {
+            // 在整个地图范围内随机生成
+            const x = (Math.random() - 0.5) * 1000;
+            const z = (Math.random() - 0.5) * 1000;
+            createKid(x, z);
+        }
+    }
+}
+                    
+                    if (gameState.isDay && gameState.kids.length > 0) {
+                        gameState.kids.forEach(kid => scene.remove(kid));
+                        gameState.kids = [];
+                    }
+                    
+                    gameState.kids.forEach(kid => {
+                        const dx = gameState.player.x - kid.position.x;
+                        const dz = gameState.player.z - kid.position.z;
+                        const dist = Math.sqrt(dx*dx + dz*dz);
+                        
+                        if (dist < 40) {
+                            kid.position.x += (dx/dist) * 0.2;
+                            kid.position.z += (dz/dist) * 0.2;
+                            
+                            if (dist < 2) {
+                                gameState.isCaught = true;
+                                catchStartTime = now;
+                            }
+                        }
+                    });
+                    
+                    if (!gameState.isDay && gameState.dayTime > 50 && !gameState.carMoving && gameState.carObject) {
+                        gameState.carMoving = true;
+                    }
+                    
+                    if (gameState.carMoving && gameState.carObject) {
+                        const dx = 600 - gameState.carObject.position.x;
+                        const dz = 600 - gameState.carObject.position.z;
+                        const dist = Math.sqrt(dx*dx + dz*dz);
+                        
+                        if (dist < 10) {
+                            gameState.carMoving = false;
+                            // 车到站后自动下车
+                            if (gameState.inCar) {
+                                gameState.inCar = false;
+                                playerBody.visible = true;
+                            }
+                        } else {
+                            gameState.carObject.position.x += (dx/dist) * gameState.carSpeed * deltaTime;
+                            gameState.carObject.position.z += (dz/dist) * gameState.carSpeed * deltaTime;
+                            gameState.carPos.x = gameState.carObject.position.x;
+                            gameState.carPos.z = gameState.carObject.position.z;
+                        }
+                    }
+                    
+                    if (gameState.inCar && gameState.carObject) {
+                        gameState.player.x = gameState.carObject.position.x;
+                        gameState.player.z = gameState.carObject.position.z;
+                    }
+                }
+                
+                // 游乐场逻辑
+                if (gameState.currentScene === 'playground' && playgroundObjects) {
+                    if (gameState.lightsOn) {
+                        gameState.lightTimer -= deltaTime;
+                        if (gameState.lightTimer <= 0) {
+                            gameState.lightsOn = false;
+                            parkLights.forEach(l => l.visible = false);
+                            gameState.clownActive = true;
+                        }
+                    }
+                    
+                    if (gameState.clownActive) {
+                        const dx = gameState.player.x - gameState.clownPos.x;
+                        const dz = gameState.player.z - gameState.clownPos.z;
+                        const dist = Math.sqrt(dx*dx + dz*dz);
+                        
+                        const angleToClown = Math.atan2(dx, dz);
+                        const angleDiff = Math.abs(angleToClown - gameState.rotationY);
+                        
+                        if (angleDiff < 0.5) {
+                            gameState.clownVisible = false;
+                            playgroundObjects.clown.visible = false;
+                            
+                            gameState.clownPos.x = 600 + (Math.random() - 0.5) * 200;
+                            gameState.clownPos.z = 600 + (Math.random() - 0.5) * 200;
+                            
+                            setTimeout(() => {
+                                if (gameState.clownActive) {
+                                    gameState.clownVisible = true;
+                                    playgroundObjects.clown.visible = true;
+                                    playgroundObjects.clown.position.x = gameState.clownPos.x;
+                                    playgroundObjects.clown.position.z = gameState.clownPos.z;
+                                }
+                            }, 500);
+                        } else {
+                            gameState.clownVisible = true;
+                            playgroundObjects.clown.visible = true;
+                            
+                            if (dist > 3) {
+                                gameState.clownPos.x += (dx/dist) * 0.25;
+                                gameState.clownPos.z += (dz/dist) * 0.25;
+                                playgroundObjects.clown.position.x = gameState.clownPos.x;
+                                playgroundObjects.clown.position.z = gameState.clownPos.z;
+                            } else {
+                                gameState.isCaught = true;
+                                catchStartTime = now;
+                            }
+                        }
+                    }
+                }
+                
+                updateJump();
+                
+                if (!gameState.inCar && !gameState.isCaught) {
+                    const speed = 0.3;
+                    let nx = gameState.player.x, nz = gameState.player.z;
+                    
+                    if(keys.w) { nx -= Math.sin(gameState.rotationY) * speed; nz -= Math.cos(gameState.rotationY) * speed; }
+                    if(keys.s) { nx += Math.sin(gameState.rotationY) * speed; nz += Math.cos(gameState.rotationY) * speed; }
+                    if(keys.a) { nx -= Math.cos(gameState.rotationY) * speed; nz += Math.sin(gameState.rotationY) * speed; }
+                    if(keys.d) { nx += Math.cos(gameState.rotationY) * speed; nz -= Math.sin(gameState.rotationY) * speed; }
+                    
+                    if(!checkCollision(nx, nz)) {
+                        gameState.player.x = nx;
+                        gameState.player.z = nz;
+                    }
+                }
+                
+                // 检查附近物品
+                gameState.nearItem = null;
+                gameState.nearCar = false;
+                gameState.nearRope = false;
+                gameState.nearRollerCoaster = false;
+                
+                const px = gameState.player.x, pz = gameState.player.z;
+                
+                // 遍历查找可捡物品
+                scene.traverse(obj => {
+                    if (obj.userData && (obj.userData.type === 'almond' || obj.userData.type === 'flashlight')) {
+                        const dist = Math.sqrt(
+                            (px - obj.position.x)**2 + 
+                            (pz - obj.position.z)**2
+                        );
+                        if (dist < 2.5) {
+                            gameState.nearItem = obj;
+                        }
+                    }
+                });
+                
+                if (gameState.currentScene === 'grassland') {
+                    const carDist = Math.sqrt((px - gameState.carPos.x)**2 + (pz - gameState.carPos.z)**2);
+                    if (carDist < 5) gameState.nearCar = true;
+                    
+                    const ropeDist = Math.sqrt((px - 600)**2 + (pz - 600)**2);
+                    if (ropeDist < 8) gameState.nearRope = true;
+                } else if (playgroundObjects) {
+                    const coasterDist = Math.sqrt(
+                        (px - playgroundObjects.coaster.position.x)**2 + 
+                        (pz - playgroundObjects.coaster.position.z)**2
+                    );
+                    if (coasterDist < 5) gameState.nearRollerCoaster = true;
+                }
+                
+                const bodyOffset = 2.0;
+                playerBody.position.set(
+                    gameState.player.x + Math.sin(gameState.rotationY) * bodyOffset,
+                    gameState.player.y - 0.8,
+                    gameState.player.z + Math.cos(gameState.rotationY) * bodyOffset
+                );
+                playerBody.rotation.y = gameState.rotationY;
+                
+                camera.position.set(gameState.player.x, gameState.player.y + 0.2, gameState.player.z + 2);
+                camera.rotation.set(0, gameState.rotationY, 0);
+                
+                if(gameState.hasFlashlight && gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlightOn) {
+                    flashlight.visible = true;
+                    flashlight.position.copy(camera.position);
+                    flashlightTarget.position.set(
+                        camera.position.x - Math.sin(gameState.rotationY) * 15,
+                        camera.position.y - 0.2,
+                        camera.position.z - Math.cos(gameState.rotationY) * 15
+                    );
+                } else flashlight.visible = false;
+                
+                let hintText = '';
+                if (gameState.nearRope && gameState.currentScene === 'grassland') hintText = '🧗 抓住绳子';
+                else if (gameState.currentScene === 'playground' && gameState.nearRollerCoaster) hintText = '🎢 坐上过山车';
+                else if (gameState.nearCar && !gameState.carMoving && !gameState.inCar) hintText = '🚐 进入面包车';
+                else if (gameState.inCar) hintText = '⬆️ 跳跃下车';
+                else if (gameState.nearItem) {
+                    if (gameState.nearItem.userData.type === 'almond') hintText = '🧪 捡起杏仁水';
+                    else if (gameState.nearItem.userData.type === 'flashlight') hintText = '🔦 捡起手电筒';
+                }
+                
+                document.getElementById('interactionHint').style.display = hintText ? 'block' : 'none';
+                document.getElementById('interactionHint').textContent = hintText || '🔍';
+                
+                gameState.sanity -= gameState.sanityDrainRate * deltaTime;
+                gameState.sanity = Math.max(0, Math.min(100, gameState.sanity));
+                if(gameState.sanity <= 0) {
+                    gameState.isAlive = false;
+                    document.getElementById('sanityDeathMessage').style.display = 'block';
+                }
+                
+                updateUI();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                updatePlayer();
+                renderer.render(scene, camera);
+            }
+
+            buildScene();
+            updateUI();
+            initDevTools();
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        })();
+    </script>
+</body>
+</html>

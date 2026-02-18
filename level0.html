@@ -1,0 +1,2264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>逃离后室Level 0 · 身体版</title>
+    <style>
+        /* ==================== UI 完全照抄原版，一个字不改 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: #d4c541;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #d4c541;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        /* 物品栏 - 8格，更小 */
+        #inventory {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            background: rgba(10, 10, 10, 0.85);
+            padding: 6px;
+            border-radius: 14px;
+            border: 2px solid #b3a13b;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .inventory-slot {
+            width: 42px;
+            height: 42px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 2px solid #8a7a3a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #ffd966;
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+        }
+        
+        .inventory-slot.has-item {
+            border-color: #76ff03;
+        }
+        
+        .inventory-slot.active {
+            border-color: #FFD700;
+            box-shadow: 0 0 12px gold;
+            transform: scale(1.05);
+        }
+        
+        /* 方向控制 - 稍小一点 */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #d4c541;
+            border-radius: 16px;
+            color: #ffd966;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .control-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #d4c541;
+            color: #1a1a1a;
+        }
+        
+        #jumpBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 120px;
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #d4c541;
+            border-radius: 16px;
+            color: #ffd966;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #jumpBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #d4c541;
+            color: #1a1a1a;
+        }
+        
+        #interactBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background: rgba(212, 197, 65, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 38px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #interactBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #ffd966;
+        }
+        
+        #useBtn {
+            position: fixed;
+            top: 110px;
+            right: 15px;
+            width: 55px;
+            height: 55px;
+            background: rgba(76, 175, 80, 0.95);
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #2a5a2a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #useBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2a5a2a;
+        }
+        
+        /* 新增丢弃按钮 - 样式和useBtn一样，颜色不同 */
+        #dropBtn {
+            position: fixed;
+            top: 110px;
+            right: 80px;
+            width: 55px;
+            height: 55px;
+            background: #ff4444;
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #aa2222;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #dropBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa2222;
+        }
+        
+        #flashlightToggleBtn {
+            position: fixed;
+            bottom: 100px;
+            right: 35px;
+            width: 55px;
+            height: 55px;
+            background: rgba(255, 215, 0, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 26px;
+            color: #1a1a1a;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .flashlight-on { background: rgba(255, 215, 0, 0.95); }
+        .flashlight-off { background: rgba(80, 80, 80, 0.95); color: #ccc; }
+        
+        .touch-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 500;
+            background: transparent;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        
+        .status-display {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            background: rgba(10, 10, 10, 0.85);
+            color: #ffd966;
+            padding: 10px 15px;
+            border-radius: 14px;
+            border: 2px solid #b3a13b;
+            font-size: 14px;
+            z-index: 2000;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            min-width: 160px;
+        }
+        
+        .status-display div {
+            margin-bottom: 5px;
+        }
+        
+        .sanity-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(50, 50, 50, 0.8);
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+            border: 1px solid #8a7a3a;
+        }
+        
+        .sanity-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00c8ff, #00ffaa);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        #interactionHint {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: #ffd966;
+            padding: 10px 22px;
+            border-radius: 40px;
+            display: none;
+            font-size: 17px;
+            font-weight: bold;
+            border: 2px solid #d4c541;
+            z-index: 2000;
+            pointer-events: none;
+        }
+        
+        #caughtMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(150, 0, 0, 0.9);
+            padding: 35px;
+            border-radius: 28px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 7000;
+            border: 3px solid #ff0000;
+            color: white;
+            pointer-events: none;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        #settingsBtn {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #d4c541;
+            border-radius: 12px;
+            color: #ffd966;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton {
+            position: fixed;
+            top: 70px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: #ffaa00;
+            border: 3px solid white;
+            border-radius: 12px;
+            color: black;
+            font-size: 22px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3001;
+            box-shadow: 0 4px 0 #aa7700;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa7700;
+        }
+        
+        #devConsole {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.98);
+            border: 3px solid #ffaa00;
+            border-radius: 18px;
+            padding: 25px;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 0 35px rgba(255,170,0,0.5);
+            pointer-events: auto;
+            width: 75%;
+            max-width: 350px;
+        }
+        
+        #devConsole input {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            background: #333;
+            border: 2px solid #ffaa00;
+            border-radius: 10px;
+            color: white;
+            outline: none;
+        }
+        
+        #devConsole button {
+            background: #ffaa00;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 17px;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            border-bottom: 4px solid #aa7700;
+        }
+        
+        #devConsole button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        #settingsPanel {
+            position: fixed;
+            top: 75px;
+            right: 12px;
+            width: 220px;
+            background: rgba(10, 10, 10, 0.98);
+            border: 3px solid #d4c541;
+            border-radius: 16px;
+            padding: 18px;
+            color: #ffd966;
+            z-index: 3500;
+            pointer-events: auto;
+            display: none;
+            backdrop-filter: blur(8px);
+        }
+        
+        .quality-option {
+            background: rgba(40, 40, 40, 0.9);
+            border: 2px solid #8a7a3a;
+            border-radius: 30px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .quality-option.active {
+            background: #d4c541;
+            color: #1a1a1a;
+        }
+        
+        .close-btn {
+            width: 100%;
+            padding: 10px;
+            background: #5a4e2b;
+            border: none;
+            border-radius: 30px;
+            color: #ffd966;
+            font-size: 15px;
+            margin-top: 12px;
+            cursor: pointer;
+            border-bottom: 3px solid #3a351a;
+        }
+        
+        .close-btn:active {
+            transform: translateY(2px);
+            border-bottom: none;
+        }
+        
+        #deathMessage, #sanityDeathMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 30px;
+            border-radius: 24px;
+            font-size: 22px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #d4c541;
+            color: #ffd966;
+            pointer-events: auto;
+        }
+        
+        #winMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 35px;
+            border-radius: 26px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #3366ff;
+            color: #3366ff;
+            pointer-events: auto;
+        }
+        
+        #winMessage button, #deathMessage button, #sanityDeathMessage button {
+            margin-top: 22px;
+            padding: 12px 35px;
+            background: #d4c541;
+            border: none;
+            border-radius: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a1a;
+            border-bottom: 4px solid #5a4e2b;
+            cursor: pointer;
+        }
+        
+        #winMessage button:active, #deathMessage button:active, #sanityDeathMessage button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        /* 蓝色死亡遮罩 */
+        #deathOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0044aa;
+            display: none;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        /* 下一关按钮样式 */
+        #nextLevelBtn {
+            margin-top: 15px;
+            padding: 10px 25px;
+            background: #4CAF50;
+            border: none;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            border-bottom: 4px solid #2a5a2a;
+            cursor: pointer;
+            display: inline-block;
+        }
+        
+        #nextLevelBtn:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <!-- 8格物品栏 -->
+        <div id="inventory">
+            <div class="inventory-slot" id="slot1"></div>
+            <div class="inventory-slot" id="slot2"></div>
+            <div class="inventory-slot" id="slot3"></div>
+            <div class="inventory-slot" id="slot4"></div>
+            <div class="inventory-slot" id="slot5"></div>
+            <div class="inventory-slot" id="slot6"></div>
+            <div class="inventory-slot" id="slot7"></div>
+            <div class="inventory-slot" id="slot8"></div>
+        </div>
+        
+        <div id="controls">
+            <div class="control-group"><button class="control-btn" id="forwardBtn">▲</button></div>
+            <div class="control-group">
+                <button class="control-btn" id="leftBtn">◀</button>
+                <button class="control-btn" id="backwardBtn">▼</button>
+                <button class="control-btn" id="rightBtn">▶</button>
+            </div>
+        </div>
+        
+        <button id="jumpBtn">⬆️</button>
+        <button id="interactBtn">✋</button>
+        <button id="useBtn">使用</button>
+        <button id="dropBtn">🗑️</button> <!-- 新增丢弃按钮 -->
+        <button id="flashlightToggleBtn">🔦</button>
+        <button id="settingsBtn">⚙️</button>
+        <button id="devTButton">T</button>
+        
+        <div id="settingsPanel">
+            <div style="font-size:18px; font-weight:bold; margin-bottom:15px; text-align:center;">⚙️ 画质</div>
+            <div id="qualityLow" class="quality-option"><span>📱 低质</span><span>灯纯装饰</span></div>
+            <div id="qualityMid" class="quality-option"><span>📲 中等</span><span>正常光影</span></div>
+            <div id="qualityHigh" class="quality-option active"><span>💻 高质</span><span>阴影+光效</span></div>
+            <button class="close-btn" id="closeSettingsBtn">关闭</button>
+        </div>
+        
+        <div id="interactionHint">🔍 点击手掌交互</div>
+        
+        <div class="status-display">
+            <div>🪜 梯子碎片: <span id="ladderCount">0</span>/5</div>
+            <div>🔧 扳手: <span id="wrenchCount">0</span>/1</div>
+            <div>💧 杏仁水: <span id="almondCount">0</span></div>
+            <div>🔦 手电筒: <span id="flashlightOwned">无</span></div>
+            <div>🔑 钥匙: <span id="keyStatus">无</span></div>
+            <div>🧠 理智:</div>
+            <div class="sanity-bar"><div id="sanityFill" class="sanity-fill" style="width:100%"></div></div>
+            <div>👾 <span id="monsterStatus">游荡</span></div>
+            <div>🎮 <span id="qualityStatus">高质</span></div>
+        </div>
+    </div>
+    
+    <!-- 蓝色死亡遮罩 -->
+    <div id="deathOverlay"></div>
+    
+    <div id="caughtMessage"><div style="font-size:32px; margin-bottom:12px;">👾 被抓住了！</div><div>5秒后死亡...</div></div>
+    <div id="winMessage">
+        <h2>🎉 逃脱成功</h2>
+        <p>你逃离了Level 0！</p>
+        <button id="nextLevelBtn" onclick="window.location.href='Level1.html'">▶ 通往下一关</button>
+        <button onclick="location.reload()">再来一局</button>
+    </div>
+    <div id="deathMessage"><h2>☠️ 终结</h2><p style="color:#ff6666;">实体撕裂了你</p><button onclick="location.reload()">重生</button></div>
+    <div id="sanityDeathMessage"><h2>💥 理智崩溃</h2><button onclick="location.reload()">重生</button></div>
+    
+    <div class="touch-area" id="touchArea"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        (function() {
+            "use strict";
+
+            // ==================== 游戏状态 ====================
+            const gameState = {
+                player: { x: 0, y: 1.6, z: 0 },
+                rotationY: 0,
+                items: { 
+                    ladderPieces: 0, 
+                    wrench: 0,
+                    almondWater: 0 
+                },
+                flashlightOn: false,
+                hasFlashlight: false,
+                nearItem: null,
+                nearExit: false,
+                nearLadderObject: false,
+                isAlive: true,
+                hasKey: false,
+                activeSlot: -1,
+                flashlightSlotIndex: -1,
+                quality: 'high',
+                sanity: 100,
+                sanityDrainRate: 0.05,
+                isClimbing: false,
+                ladderPlaced: false,
+                ladderSecured: false,
+                ladderObject: null,
+                isJumping: false,
+                jumpVelocity: 0,
+                onGround: true,
+                isCaught: false,
+                catchTimer: 0,
+                
+                // 手持物品模型
+                heldItemModel: null
+            };
+
+            // ==================== Three.js 初始化 ====================
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xd4c541);
+            
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(0, 1.8, 5);
+            // ==================== 手持物品容器（固定在相机右下角）====================
+const heldItemContainer = new THREE.Group();
+
+function createHeldItemModel(type) {
+    while(heldItemContainer.children.length > 0) {
+        heldItemContainer.remove(heldItemContainer.children[0]);
+    }
+    
+    if (!type) return;
+    
+    let model;
+    if (type === '🪜') {
+        model = new THREE.Group();
+        const body = new THREE.Mesh(
+            new THREE.BoxGeometry(0.4, 0.1, 0.2),
+            new THREE.MeshLambertMaterial({ color: 0x8b5a2b })
+        );
+        body.position.y = 0;
+        model.add(body);
+        
+        for (let i = 0; i < 2; i++) {
+            const rung = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.05, 0.05, 0.5, 6),
+                new THREE.MeshLambertMaterial({ color: 0xa0522d })
+            );
+            rung.rotation.z = Math.PI / 2;
+            rung.position.set(0, 0.1 + i * 0.1, 0);
+            model.add(rung);
+        }
+    }
+    else if (type === '🔧') {
+        model = new THREE.Group();
+        const handle = new THREE.Mesh(
+            new THREE.BoxGeometry(0.4, 0.05, 0.1),
+            new THREE.MeshLambertMaterial({ color: 0xcccccc })
+        );
+        handle.position.set(0, 0, 0);
+        model.add(handle);
+        
+        const head = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 0.1, 0.2),
+            new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+        );
+        head.position.set(0.25, 0, 0);
+        model.add(head);
+    }
+    else if (type === '🧪') {
+        model = new THREE.Group();
+        const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8), canMat);
+        body.position.y = 0.4;
+        model.add(body);
+        
+        const topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+        const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6), topMat);
+        top.position.y = 0.85;
+        model.add(top);
+    }
+    else if (type === '🔦') {
+        model = new THREE.Group();
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8), bodyMat);
+        body.rotation.x = Math.PI / 2;
+        body.position.set(0, 0, 0);
+        model.add(body);
+        
+        const headMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+        const head = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8), headMat);
+        head.rotation.x = Math.PI / 2;
+        head.position.set(0, 0, 0.7);
+        model.add(head);
+    }
+    else if (type === '🔑') {
+        model = new THREE.Mesh(
+            new THREE.BoxGeometry(0.3, 0.05, 0.1),
+            new THREE.MeshLambertMaterial({ color: 0xffaa00 })
+        );
+    }
+    
+    if (model) {
+        model.scale.set(0.4, 0.4, 0.4);
+        model.rotation.set(0.2, 0.5, 0.1);
+        heldItemContainer.add(model);
+    }
+}
+
+heldItemContainer.position.set(0.6, -0.4, -0.8);
+camera.add(heldItemContainer);
+scene.add(camera);
+
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = false;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setClearColor(0xd4c541);
+
+            // ==================== 灯光系统 (原封不动) ====================
+            const ambientLight = new THREE.AmbientLight(0xfff5cc, 0.8);
+            scene.add(ambientLight);
+            
+            const mainLight = new THREE.DirectionalLight(0xfff0cc, 1.0);
+            mainLight.position.set(0, 10, 5);
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 1024;
+            mainLight.shadow.mapSize.height = 1024;
+            mainLight.shadow.camera.near = 0.5;
+            mainLight.shadow.camera.far = 50;
+            mainLight.shadow.camera.left = -20;
+            mainLight.shadow.camera.right = 20;
+            mainLight.shadow.camera.top = 20;
+            mainLight.shadow.camera.bottom = -20;
+            scene.add(mainLight);
+            
+            const fillLight = new THREE.DirectionalLight(0xffeebb, 0.4);
+            fillLight.position.set(-5, 5, -5);
+            scene.add(fillLight);
+            
+            const backLight = new THREE.DirectionalLight(0xffeedd, 0.3);
+            backLight.position.set(0, 5, -10);
+            scene.add(backLight);
+            
+            const flashlight = new THREE.SpotLight(0xfff0b0, 2.0);
+            flashlight.angle = 0.35;
+            flashlight.penumbra = 0.3;
+            flashlight.distance = 50;
+            flashlight.castShadow = true;
+            scene.add(flashlight);
+            flashlight.visible = false;
+            
+            const flashlightTarget = new THREE.Object3D();
+            flashlight.target = flashlightTarget;
+            scene.add(flashlightTarget);
+
+            // ==================== 玩家身体 ====================
+            const playerBody = new THREE.Group();
+            
+            // 身体（橙黄色）
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0xffaa33 });
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.4), torsoMat);
+            torso.position.y = 0.7;
+            playerBody.add(torso);
+            
+            // 头（橙黄色，稍微深一点）
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xff9933 });
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.4), headMat);
+            head.position.y = 1.5;
+            playerBody.add(head);
+            
+            // 黑色面罩（扁正方形）
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const mask = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), maskMat);
+            mask.position.set(0, 1.5, 0.25);
+            playerBody.add(mask);
+            
+            // 左臂
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftArm.position.set(-0.6, 1.0, 0);
+            playerBody.add(leftArm);
+            
+            // 右臂（专门拿物品）
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightArm.position.set(0.6, 1.0, 0);
+            playerBody.add(rightArm);
+            
+            // 右手（稍大一点，方便持物）
+            const rightHand = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), torsoMat);
+            rightHand.position.set(0.6, 0.5, 0.2);
+            playerBody.add(rightHand);
+            
+            // 左腿
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftLeg.position.set(-0.25, -0.3, 0);
+            playerBody.add(leftLeg);
+            
+            // 右腿
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightLeg.position.set(0.25, -0.3, 0);
+            playerBody.add(rightLeg);
+            
+            // 把身体放到场景中，但相机在面罩前面，所以看不到自己身体
+            playerBody.position.set(0, 0, 0);
+            scene.add(playerBody);
+            
+           
+
+            // ==================== 画质设置 (原封不动) ====================
+            function applyQualitySettings(quality) {
+                gameState.quality = quality;
+                document.getElementById('qualityStatus').textContent = 
+                    quality === 'low' ? '低质' : quality === 'mid' ? '中等' : '高质';
+                
+                document.querySelectorAll('.quality-option').forEach(el => el.classList.remove('active'));
+                if(quality === 'low') document.getElementById('qualityLow').classList.add('active');
+                if(quality === 'mid') document.getElementById('qualityMid').classList.add('active');
+                if(quality === 'high') document.getElementById('qualityHigh').classList.add('active');
+                
+                if(quality === 'low') {
+                    ambientLight.intensity = 1.5;
+                    mainLight.intensity = 1.2;
+                    fillLight.intensity = 0.8;
+                    backLight.intensity = 0.6;
+                    flashlight.intensity = 0.5;
+                    renderer.shadowMap.enabled = false;
+                } else if(quality === 'mid') {
+                    ambientLight.intensity = 1.0;
+                    mainLight.intensity = 0.9;
+                    fillLight.intensity = 0.5;
+                    backLight.intensity = 0.4;
+                    flashlight.intensity = 1.5;
+                    renderer.shadowMap.enabled = false;
+                } else {
+                    ambientLight.intensity = 0.7;
+                    mainLight.intensity = 0.8;
+                    fillLight.intensity = 0.3;
+                    backLight.intensity = 0.2;
+                    flashlight.intensity = 2.5;
+                    renderer.shadowMap.enabled = true;
+                }
+                
+                flashlight.visible = gameState.hasFlashlight && gameState.flashlightOn && gameState.activeSlot === gameState.flashlightSlotIndex;
+                
+                updateLampMaterials(quality);
+            }
+
+            const lampTubes = [];
+            
+            function updateLampMaterials(quality) {
+                lampTubes.forEach(tube => {
+                    if(quality === 'low') {
+                        tube.material.emissive.setHex(0x000000);
+                        tube.material.emissiveIntensity = 0;
+                    } else if(quality === 'mid') {
+                        tube.material.emissive.setHex(0x332211);
+                        tube.material.emissiveIntensity = 0.2;
+                    } else {
+                        tube.material.emissive.setHex(0x553322);
+                        tube.material.emissiveIntensity = 0.4;
+                    }
+                });
+            }
+
+            // ==================== 天花板灯管 (原封不动) ====================
+            function createLampDecorations() {
+                for (let x = -100; x <= 160; x += 20) {
+                    for (let z = -80; z <= 80; z += 20) {
+                        const lampBase = new THREE.Mesh(
+                            new THREE.BoxGeometry(1.2, 0.15, 0.8),
+                            new THREE.MeshStandardMaterial({ color: 0x444444 })
+                        );
+                        lampBase.position.set(x, 5.95, z);
+                        lampBase.castShadow = false;
+                        lampBase.receiveShadow = false;
+                        scene.add(lampBase);
+                        
+                        const isWorking = Math.random() < 0.8;
+                        const tubeMat = new THREE.MeshStandardMaterial({ 
+                            color: isWorking ? 0xffeedd : 0x444444,
+                            emissive: isWorking ? 0x332211 : 0x000000,
+                            emissiveIntensity: 0.2
+                        });
+                        
+                        const tube = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.15, 0.15, 1.2, 8),
+                            tubeMat
+                        );
+                        tube.rotation.z = Math.PI / 2;
+                        tube.position.set(x, 5.9, z);
+                        tube.castShadow = false;
+                        tube.receiveShadow = false;
+                        scene.add(tube);
+                        
+                        lampTubes.push(tube);
+                    }
+                }
+            }
+
+            // ==================== 场景构建 (原封不动) ====================
+            function createFloor() {
+                const floorMat = new THREE.MeshLambertMaterial({ color: 0xf4e542 });
+                const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), floorMat);
+                floor.rotation.x = -Math.PI / 2;
+                floor.position.y = 0;
+                floor.receiveShadow = true;
+                scene.add(floor);
+            }
+
+            function createCeiling() {
+                const ceilingMat = new THREE.MeshLambertMaterial({ color: 0xe6d97a });
+                const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), ceilingMat);
+                ceiling.rotation.x = Math.PI / 2;
+                ceiling.position.y = 6;
+                ceiling.receiveShadow =true;
+                scene.add(ceiling);
+            }
+
+            function createWalls() {
+                const wallMaterial = new THREE.MeshLambertMaterial({ color: 0xd4c541 });
+                
+                const boundaryWalls = [
+                    { x: 0, z: -90, w: 400, d: 2 },
+                    { x: 0, z: 90, w: 400, d: 2 },
+                    { x: -200, z: 0, w: 2, d: 180 },
+                    { x: 200, z: 0, w: 2, d: 180 }
+                ];
+                
+                boundaryWalls.forEach(w => {
+                    const wall = new THREE.Mesh(new THREE.BoxGeometry(w.w, 6, w.d), wallMaterial);
+                    wall.position.set(w.x, 3, w.z);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    scene.add(wall);
+                });
+                
+                const innerWalls = [
+                    { x: -120, z: 0, w: 2, d: 140 },
+                    { x: -60, z: -40, w: 2, d: 80 },
+                    { x: -40, z: 50, w: 40, d: 2 },
+                    { x: 0, z: -50, w: 60, d: 2 },
+                    { x: 40, z: 10, w: 2, d: 90 },
+                    { x: 90, z: -30, w: 2, d: 100 },
+                    { x: 110, z: 40, w: 2, d: 80 },
+                    { x: 140, z: -20, w: 40, d: 2 },
+                    { x: -80, z: 70, w: 2, d: 40 },
+                    { x: 160, z: -60, w: 2, d: 50 }
+                ];
+                
+                innerWalls.forEach(w => {
+                    const wall = new THREE.Mesh(new THREE.BoxGeometry(w.w, 6, w.d), wallMaterial);
+                    wall.position.set(w.x, 3, w.z);
+                    wall.castShadow = true;
+                    wall.receiveShadow = true;
+                    scene.add(wall);
+                });
+            }
+
+            function createRoom(cx, cz, w, d) {
+                const mat = new THREE.MeshLambertMaterial({ color: 0xc4b55a });
+                
+                const back = new THREE.Mesh(new THREE.BoxGeometry(w, 6, 1), mat);
+                back.position.set(cx, 3, cz - d/2);
+                back.castShadow = true;
+                back.receiveShadow = true;
+                scene.add(back);
+                
+                const front = new THREE.Mesh(new THREE.BoxGeometry(w, 6, 1), mat);
+                front.position.set(cx, 3, cz + d/2);
+                front.castShadow = true;
+                front.receiveShadow = true;
+                scene.add(front);
+                
+                const left = new THREE.Mesh(new THREE.BoxGeometry(1, 6, d), mat);
+                left.position.set(cx - w/2, 3, cz);
+                left.castShadow = true;
+                left.receiveShadow = true;
+                scene.add(left);
+                
+                const right = new THREE.Mesh(new THREE.BoxGeometry(1, 6, d), mat);
+                right.position.set(cx + w/2, 3, cz);
+                right.castShadow = true;
+                right.receiveShadow = true;
+                scene.add(right);
+                
+                const door = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.8, 3.5, 0.4),
+                    new THREE.MeshLambertMaterial({ color: 0x8b5a2b })
+                );
+                door.position.set(cx, 1.8, cz + d/2 + 0.3);
+                door.castShadow = true;
+                door.userData = { type: 'door' };
+                scene.add(door);
+                items.push(door);
+            }
+
+            function createRooms() {
+                createRoom(140, -60, 24, 20);
+                createRoom(-120, 60, 28, 24);
+                createRoom(-80, -70, 24, 28);
+                createRoom(100, 80, 32, 24);
+            }
+
+            function addFurniture(cx, cz) {
+                const mat = new THREE.MeshLambertMaterial({ color: 0x5a3a2a });
+                
+                const table = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.2, 1.5), mat);
+                table.position.set(cx + 2, 1.0, cz - 2);
+                table.castShadow = true;
+                table.receiveShadow = true;
+                scene.add(table);
+                
+                const chair = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.2, 0.9), mat);
+                chair.position.set(cx + 1, 0.6, cz + 2);
+                chair.castShadow = true;
+                chair.receiveShadow = true;
+                scene.add(chair);
+                
+                const box = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.0, 1.0), mat);
+                box.position.set(cx - 2, 0.5, cz + 1.5);
+                box.castShadow = true;
+                box.receiveShadow = true;
+                scene.add(box);
+            }
+
+            function addAllFurniture() {
+                addFurniture(140, -60);
+                addFurniture(-120, 60);
+                addFurniture(-80, -70);
+                addFurniture(100, 80);
+            }
+
+            const items = [];
+
+            function createLadderPiece(x, z) {
+                const group = new THREE.Group();
+                
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.8, 0.2, 0.4),
+                    new THREE.MeshLambertMaterial({ color: 0x8b5a2b })
+                );
+                body.position.y = 0.1;
+                body.castShadow = true;
+                group.add(body);
+                
+                for (let i = 0; i < 3; i++) {
+                    const rung = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.1, 0.9, 6),
+                        new THREE.MeshLambertMaterial({ color: 0xa0522d })
+                    );
+                    rung.rotation.z = Math.PI / 2;
+                    rung.position.set(0, 0.1 + i * 0.15, 0);
+                    rung.castShadow = true;
+                    group.add(rung);
+                }
+                
+                group.position.set(x, 0.5, z);
+                group.userData = { type: 'ladder' };
+                return group;
+            }
+
+            function createWrench(x, z) {
+                const group = new THREE.Group();
+                
+                const handle = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.1, 0.2),
+                    new THREE.MeshLambertMaterial({ color: 0xcccccc })
+                );
+                handle.position.set(0, 0, 0);
+                handle.castShadow = true;
+                group.add(handle);
+                
+                const head = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.2, 0.2, 0.3),
+                    new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+                );
+                head.position.set(0.4, 0, 0);
+                head.castShadow = true;
+                group.add(head);
+                
+                group.position.set(x, 0.5, z);
+                group.userData = { type: 'wrench' };
+                return group;
+            }
+
+            function createAlmondWater(x, z) {
+                const group = new THREE.Group();
+                
+                // 黄色易拉罐
+                const canMat = new THREE.MeshLambertMaterial({ color: 0xffdd00 });
+                const bottle = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.18, 0.8, 8),
+                    canMat
+                );
+                bottle.position.y = 0.4;
+                bottle.castShadow = true;
+                group.add(bottle);
+                
+                const cap = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.1, 0.1, 6),
+                    new THREE.MeshLambertMaterial({ color: 0xcccccc })
+                );
+                cap.position.y = 0.8;
+                cap.castShadow = true;
+                group.add(cap);
+                
+                group.position.set(x, 0.2, z);
+                group.userData = { type: 'almond' };
+                return group;
+            }
+
+            function createFlashlightItem(x, z) {
+                const group = new THREE.Group();
+                
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.2, 1.0, 8),
+                    new THREE.MeshLambertMaterial({ color: 0x222222 })
+                );
+                body.rotation.x = Math.PI / 2;
+                body.position.set(0, 0, 0);
+                body.castShadow = true;
+                group.add(body);
+                
+                const head = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.15, 0.15, 0.3, 8),
+                    new THREE.MeshLambertMaterial({ color: 0x333333 })
+                );
+                head.rotation.x = Math.PI / 2;
+                head.position.set(0, 0, 0.65);
+                head.castShadow = true;
+                group.add(head);
+                
+                group.position.set(x, 0.5, z);
+                group.userData = { type: 'flashlight' };
+                return group;
+            }
+
+            function createKey(x, z) {
+                const key = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.5, 0.1, 0.2),
+                    new THREE.MeshLambertMaterial({ color: 0xffaa00 })
+                );
+                key.position.set(x, 0.5, z);
+                key.castShadow = true;
+                key.userData = { type: 'key' };
+                return key;
+            }
+
+            function createSpecialDoor() {
+                const door = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.2, 4, 0.4),
+                    new THREE.MeshLambertMaterial({ color: 0xaa3333 })
+                );
+                door.position.set(40, 2, -10);
+                door.castShadow = true;
+                door.userData = { type: 'specialDoor', requiresKey: true };
+                return door;
+            }
+
+            function createRandomCollectibles() {
+                for (let i = 0; i < 5; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 320;
+                        z = (Math.random() - 0.5) * 160;
+                    } while(Math.abs(x) > 190 || Math.abs(z) > 80);
+                    
+                    const piece = createLadderPiece(x, z);
+                    scene.add(piece);
+                    items.push(piece);
+                }
+                
+                let wx, wz;
+                do {
+                    wx = (Math.random() - 0.5) * 320;
+                    wz = (Math.random() - 0.5) * 160;
+                } while(Math.abs(wx) > 190 || Math.abs(wz) > 80);
+                
+                const wrench = createWrench(wx, wz);
+                scene.add(wrench);
+                items.push(wrench);
+                
+                for (let i = 0; i < 6; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 320;
+                        z = (Math.random() - 0.5) * 160;
+                    } while(Math.abs(x) > 190 || Math.abs(z) > 80);
+                    
+                    const almond = createAlmondWater(x, z);
+                    scene.add(almond);
+                    items.push(almond);
+                }
+                
+                let fx, fz;
+                do {
+                    fx = (Math.random() - 0.5) * 320;
+                    fz = (Math.random() - 0.5) * 160;
+                } while(Math.abs(fx) > 190 || Math.abs(fz) > 80);
+                
+                const flashlightItem = createFlashlightItem(fx, fz);
+                scene.add(flashlightItem);
+                items.push(flashlightItem);
+            }
+
+            function createRandomExit() {
+                const wall = Math.floor(Math.random() * 4);
+                let x, z, rotation;
+                
+                switch(wall) {
+                    case 0:
+                        x = (Math.random() - 0.5) * 280;
+                        z = -88;
+                        rotation = 0;
+                        break;
+                    case 1:
+                        x = (Math.random() - 0.5) * 280;
+                        z = 88;
+                        rotation = 0;
+                        break;
+                    case 2:
+                        x = -198;
+                        z = (Math.random() - 0.5) * 120;
+                        rotation = Math.PI / 2;
+                        break;
+                    case 3:
+                        x = 198;
+                        z = (Math.random() - 0.5) * 120;
+                        rotation = Math.PI / 2;
+                        break;
+                }
+                const exitFrame = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.5, 1.5, 0.5),
+                    new THREE.MeshLambertMaterial({ color: 0x333333 })
+                );
+                exitFrame.position.set(x, 3.5, z);
+                exitFrame.rotation.y = rotation;
+                exitFrame.castShadow = true;
+                scene.add(exitFrame);
+                
+                const exitHole = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.0, 1.0, 0.2),
+                    new THREE.MeshLambertMaterial({ color: 0x000000 })
+                );
+                exitHole.position.set(x, 3.5, z);
+                exitHole.rotation.y = rotation;
+                exitHole.userData = { type: 'exit' };
+                scene.add(exitHole);
+                
+                window.exitHole = exitHole;
+            }
+
+            function createWireMonster() {
+                const group = new THREE.Group();
+                const wireMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+                
+                const head = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 1.0), wireMat);
+                head.position.y = 3.5;
+                head.castShadow = true;
+                group.add(head);
+                
+                const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.7, 8), wireMat);
+                neck.position.y = 2.8;
+                neck.castShadow = true;
+                group.add(neck);
+                
+                const chest = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.8, 0.8), wireMat);
+                chest.position.y = 2.0;
+                chest.castShadow = true;
+                group.add(chest);
+                
+                const waist = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.6, 0.7), wireMat);
+                waist.position.y = 0.7;
+                waist.castShadow = true;
+                group.add(waist);
+                
+                const leftArm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.6, 6), wireMat);
+                leftArm1.position.set(-1.2, 2.2, 0);
+                leftArm1.rotation.z = 0.3;
+                leftArm1.rotation.x = 0.2;
+                leftArm1.castShadow = true;
+                group.add(leftArm1);
+                
+                const leftArm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.5, 6), wireMat);
+                leftArm2.position.set(-1.9, 1.4, 0.3);
+                leftArm2.rotation.z = 0.4;
+                leftArm2.rotation.x = 0.3;
+                leftArm2.castShadow = true;
+                group.add(leftArm2);
+                
+                const rightArm1 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.6, 6), wireMat);
+                rightArm1.position.set(1.2, 2.2, 0);
+                rightArm1.rotation.z = -0.3;
+                rightArm1.rotation.x = -0.2;
+                rightArm1.castShadow = true;
+                group.add(rightArm1);
+                
+                const rightArm2 = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.5, 6), wireMat);
+                rightArm2.position.set(1.9, 1.4, -0.3);
+                rightArm2.rotation.z = -0.4;
+                rightArm2.rotation.x = -0.3;
+                rightArm2.castShadow = true;
+                group.add(rightArm2);
+                
+                const leftLeg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.7, 6), wireMat);
+                leftLeg1.position.set(-0.7, -0.6, 0);
+                leftLeg1.castShadow = true;
+                group.add(leftLeg1);
+                
+                const leftLeg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.6, 6), wireMat);
+                leftLeg2.position.set(-1.1, -1.7, 0.2);
+                leftLeg2.castShadow = true;
+                group.add(leftLeg2);
+                
+                const rightLeg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.7, 6), wireMat);
+                rightLeg1.position.set(0.7, -0.6, 0);
+                rightLeg1.castShadow = true;
+                group.add(rightLeg1);
+                
+                const rightLeg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 1.6, 6), wireMat);
+                rightLeg2.position.set(1.1, -1.7, -0.2);
+                rightLeg2.castShadow = true;
+                group.add(rightLeg2);
+                
+                group.position.set(-120, 0.5, 60);
+                group.scale.set(1.2, 1.2, 1.2);
+                
+                group.userData = {
+                    speed: 0.18,
+                    range: 30,
+                    chaseRange: 45,
+                    isChasing: false,
+                    lastTeleport: performance.now(),
+                    teleportInterval: 8000,
+                    breathTimer: 0
+                };
+                
+                scene.add(group);
+                window.monster = group;
+            }
+
+            function buildScene() {
+                createFloor();
+                createCeiling();
+                createLampDecorations();
+                createWalls();
+                createRooms();
+                addAllFurniture();
+                
+                const redDoor = createSpecialDoor();
+                scene.add(redDoor);
+                items.push(redDoor);
+                
+                const keyX = (Math.random() - 0.5) * 240;
+                const keyZ = (Math.random() - 0.5) * 140;
+                const key = createKey(keyX, keyZ);
+                scene.add(key);
+                items.push(key);
+                
+                createRandomCollectibles();
+                createRandomExit();
+                createWireMonster();
+            }
+
+            function checkCollision(newX, newZ) {
+                const r = 0.7;
+                const walls = [
+                    {x:0,z:-90,w:400,d:2}, {x:0,z:90,w:400,d:2},
+                    {x:-200,z:0,w:2,d:180}, {x:200,z:0,w:2,d:180},
+                    {x:-120,z:0,w:2,d:140}, {x:-60,z:-40,w:2,d:80},
+                    {x:-40,z:50,w:40,d:2}, {x:0,z:-50,w:60,d:2},
+                    {x:40,z:10,w:2,d:90}, {x:90,z:-30,w:2,d:100},
+                    {x:110,z:40,w:2,d:80}, {x:140,z:-20,w:40,d:2},
+                    {x:140,z:-70,w:24,d:1}, {x:140,z:-50,w:24,d:1},
+                    {x:-120,z:48,w:28,d:1}, {x:-120,z:72,w:28,d:1},
+                    {x:-80,z:-84,w:24,d:1}, {x:-80,z:-56,w:24,d:1},
+                    {x:100,z:68,w:32,d:1}, {x:100,z:92,w:32,d:1}
+                ];
+                
+                for(let w of walls) {
+                    const left = w.x - w.w/2 - r;
+                    const right = w.x + w.w/2 + r;
+                    const top = w.z - w.d/2 - r;
+                    const bottom = w.z + w.d/2 + r;
+                    if(newX > left && newX < right && newZ > top && newZ < bottom) return true;
+                }
+                return false;
+            }
+
+            // ==================== 更新手持物品（相机版）====================
+function updateHeldItem() {
+    if (gameState.activeSlot === -1) {
+        createHeldItemModel(null);
+        return;
+    }
+    
+    const slot = document.getElementById('slot' + (gameState.activeSlot + 1));
+    if (!slot || !slot.classList.contains('has-item')) {
+        createHeldItemModel(null);
+        return;
+    }
+    
+    const itemType = slot.textContent;
+    createHeldItemModel(itemType);
+}
+
+            // ==================== 丢弃物品 ====================
+            function dropItem() {
+                if(gameState.isCaught || gameState.isClimbing || !gameState.isAlive) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement || !slotElement.classList.contains('has-item')) return;
+                
+                const itemType = slotElement.textContent;
+                if(!itemType) return;
+                
+                // 根据物品类型减少对应数量
+                let droppedItem = null;
+                const dropX = gameState.player.x;
+                const dropZ = gameState.player.z;
+                
+                if (itemType === '🪜' && gameState.items.ladderPieces > 0) {
+                    gameState.items.ladderPieces--;
+                    droppedItem = createLadderPiece(dropX, dropZ);
+                }
+                else if (itemType === '🔧' && gameState.items.wrench > 0) {
+                    gameState.items.wrench = 0;
+                    droppedItem = createWrench(dropX, dropZ);
+                }
+                else if (itemType === '🧪' && gameState.items.almondWater > 0) {
+                    gameState.items.almondWater--;
+                    droppedItem = createAlmondWater(dropX, dropZ);
+                }
+                else if (itemType === '🔦' && gameState.hasFlashlight) {
+                    gameState.hasFlashlight = false;
+                    gameState.flashlightOn = false;
+                    droppedItem = createFlashlightItem(dropX, dropZ);
+                }
+                else if (itemType === '🔑' && gameState.hasKey) {
+                    gameState.hasKey = false;
+                    droppedItem = createKey(dropX, dropZ);
+                }
+                
+                if (droppedItem) {
+                    scene.add(droppedItem);
+                    items.push(droppedItem);
+                    
+                    // 清空选中的格子
+                    gameState.activeSlot = -1;
+                    
+                    updateUI();
+                    updateHeldItem();
+                }
+            }
+
+            // ==================== 蓝色死亡遮罩 ====================
+            const deathOverlay = document.getElementById('deathOverlay');
+            
+            function startDeathSequence() {
+                // 隐藏所有UI提示
+                document.getElementById('caughtMessage').style.display = 'none';
+                
+                // 显示蓝色遮罩
+                deathOverlay.style.display = 'block';
+                
+                // 1秒后重生
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+
+            function updateUI() {
+                document.getElementById('ladderCount').textContent = gameState.items.ladderPieces;
+                document.getElementById('wrenchCount').textContent = gameState.items.wrench ? '1' : '0';
+                document.getElementById('almondCount').textContent = gameState.items.almondWater;
+                document.getElementById('keyStatus').textContent = gameState.hasKey ? '🔑有' : '无';
+                document.getElementById('flashlightOwned').textContent = gameState.hasFlashlight ? '🔦有' : '无';
+                document.getElementById('monsterStatus').textContent = window.monster?.userData?.isChasing ? '🔴追' : '👁️';
+                document.getElementById('sanityFill').style.width = gameState.sanity + '%';
+                
+                const sanityFill = document.getElementById('sanityFill');
+                if(gameState.sanity > 60) {
+                    sanityFill.style.background = 'linear-gradient(90deg, #00c8ff, #00ffaa)';
+                } else if(gameState.sanity > 30) {
+                    sanityFill.style.background = 'linear-gradient(90deg, #ffaa00, #ffdd00)';
+                } else {
+                    sanityFill.style.background = 'linear-gradient(90deg, #ff5500, #ff0000)';
+                }
+                
+                for(let i=1;i<=8;i++) {
+                    const slot = document.getElementById('slot'+i);
+                    slot.textContent = '';
+                    slot.classList.remove('has-item', 'active');
+                }
+                
+                let slotIdx = 0;
+                for(let i=0; i<gameState.items.ladderPieces; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🪜';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                
+                if(gameState.items.wrench > 0 && slotIdx<8) {
+                    document.getElementById('slot'+(slotIdx+1)).textContent = '🔧';
+                    document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                    slotIdx++;
+                }
+                
+                for(let i=0; i<gameState.items.almondWater; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🧪';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                
+                if(gameState.hasFlashlight && slotIdx<8) {
+                    document.getElementById('slot'+(slotIdx+1)).textContent = '🔦';
+                    document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                    gameState.flashlightSlotIndex = slotIdx;
+                    slotIdx++;
+                }
+                
+                if(gameState.hasKey && slotIdx<8) {
+                    document.getElementById('slot'+(slotIdx+1)).textContent = '🔑';
+                    document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                    slotIdx++;
+                }
+                
+                if(gameState.activeSlot !== -1) {
+                    const active = document.getElementById('slot'+(gameState.activeSlot+1));
+                    if(active) active.classList.add('active');
+                }
+                
+                const fb = document.getElementById('flashlightToggleBtn');
+                if(gameState.activeSlot === gameState.flashlightSlotIndex && gameState.hasFlashlight) {
+                    fb.style.display = 'flex';
+                    fb.innerHTML = gameState.flashlightOn ? '🔦' : '🔦';
+                    fb.className = gameState.flashlightOn ? 'flashlight-on' : 'flashlight-off';
+                } else {
+                    fb.style.display = 'none';
+                }
+                
+                // 更新手持物品
+                updateHeldItem();
+            }
+
+            function handleJump() {
+                if(gameState.onGround && !gameState.isClimbing && !gameState.isCaught) {
+                    gameState.isJumping = true;
+                    gameState.jumpVelocity = 0.28;
+                    gameState.onGround = false;
+                }
+            }
+
+            function updateJump() {
+                if(gameState.isJumping) {
+                    gameState.player.y += gameState.jumpVelocity;
+                    gameState.jumpVelocity -= 0.016;
+                    
+                    if(gameState.player.y <= 1.6) {
+                        gameState.player.y = 1.6;
+                        gameState.isJumping = false;
+                        gameState.jumpVelocity = 0;
+                        gameState.onGround = true;
+                    }
+                }
+            }
+
+            function useItem() {
+                if(gameState.isCaught || gameState.isClimbing) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement) return;
+                
+                const itemType = slotElement.textContent;
+                
+                if(itemType === '🧪' && gameState.items.almondWater > 0) {
+                    gameState.items.almondWater--;
+                    gameState.sanity = Math.min(100, gameState.sanity + 40);
+                    updateUI();
+                }
+                
+                if(itemType === '🔧' && gameState.ladderPlaced && !gameState.ladderSecured && gameState.nearLadderObject) {
+                    gameState.ladderSecured = true;
+                    alert('✅ 梯子已加固');
+                }
+            }
+
+            function interactHandler() {
+                if(!gameState.isAlive || gameState.isClimbing || gameState.isCaught) return;
+                
+                if(gameState.nearItem) {
+                    const item = gameState.nearItem;
+                    const type = item.userData.type;
+                    
+                    if(type === 'ladder' && gameState.items.ladderPieces < 5) {
+                        gameState.items.ladderPieces++;
+                        scene.remove(item);
+                        const idx = items.indexOf(item);
+                        if(idx > -1) items.splice(idx,1);
+                        updateUI();
+                    }
+                    else if(type === 'wrench' && gameState.items.wrench === 0) {
+                        gameState.items.wrench = 1;
+                        scene.remove(item);
+                        const idx = items.indexOf(item);
+                        if(idx > -1) items.splice(idx,1);
+                        updateUI();
+                    }
+                    else if(type === 'almond') {
+                        gameState.items.almondWater++;
+                        gameState.sanity = Math.min(100, gameState.sanity + 20);
+                        scene.remove(item);
+                        const idx = items.indexOf(item);
+                        if(idx > -1) items.splice(idx,1);
+                        updateUI();
+                    }
+                    else if(type === 'flashlight' && !gameState.hasFlashlight) {
+                        gameState.hasFlashlight = true;
+                        gameState.flashlightOn = false;
+                        scene.remove(item);
+                        const idx = items.indexOf(item);
+                        if(idx > -1) items.splice(idx,1);
+                        updateUI();
+                    }
+                    else if(type === 'door') {
+                        scene.remove(item);
+                        const idx = items.indexOf(item);
+                        if(idx > -1) items.splice(idx,1);
+                        updateUI();
+                    }
+                    else if(type === 'specialDoor') {
+                        if(gameState.hasKey) {
+                            scene.remove(item);
+                            const idx = items.indexOf(item);
+                            if(idx > -1) items.splice(idx,1);
+                            updateUI();
+                        } else {
+                            alert('🔒 需要钥匙');
+                        }
+                    }
+                    else if(type === 'key') {
+                        gameState.hasKey = true;
+                        scene.remove(item);
+                        const idx = items.indexOf(item);
+                        if(idx > -1) items.splice(idx,1);
+                        updateUI();
+                    }
+                } 
+                else if(gameState.nearExit && gameState.items.ladderPieces === 5 && !gameState.ladderPlaced) {
+                    placeLadder();
+                    gameState.items.ladderPieces = 0;
+                    gameState.ladderPlaced = true;
+                    updateUI();
+                }
+                else if(gameState.ladderPlaced && gameState.ladderSecured && gameState.nearLadderObject && gameState.items.ladderPieces === 0) {
+                    startClimbingAnimation();
+                }
+            }
+            
+            function placeLadder() {
+                if(!window.exitHole) return;
+                
+                const ladderMat = new THREE.MeshLambertMaterial({ color: 0x8b5a2b });
+                const ladder = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.0, 5.0, 0.3),
+                    ladderMat
+                );
+                
+                ladder.position.set(
+                    window.exitHole.position.x,
+                    window.exitHole.position.y - 3.0,
+                    window.exitHole.position.z
+                );
+                
+                if(Math.abs(window.exitHole.position.x) > 190) {
+                    ladder.rotation.x = 0.4;
+                    if(window.exitHole.position.x > 0) {
+                        ladder.position.x -= 1.0;
+                    } else {
+                        ladder.position.x += 1.0;
+                    }
+                } else {
+                    ladder.rotation.z = 0.4;
+                    if(window.exitHole.position.z > 0) {
+                        ladder.position.z -= 1.0;
+                    } else {
+                        ladder.position.z += 1.0;
+                    }
+                }
+                
+                for(let i = 0; i < 6; i++) {
+                    const rung = new THREE.Mesh(
+                        new THREE.BoxGeometry(1.1, 0.15, 0.25),
+                        new THREE.MeshLambertMaterial({ color: 0x6b4e2b })
+                    );
+                    rung.position.copy(ladder.position);
+                    rung.position.y = ladder.position.y - 2.0 + i * 0.9;
+                    
+                    if(Math.abs(window.exitHole.position.x) > 190) {
+                        rung.rotation.x = ladder.rotation.x;
+                        if(window.exitHole.position.x > 0) {
+                            rung.position.x = ladder.position.x + 0.5;
+                        } else {
+                            rung.position.x = ladder.position.x - 0.5;
+                        }
+                    } else {
+                        rung.rotation.z = ladder.rotation.z;
+                        if(window.exitHole.position.z > 0) {
+                            rung.position.z = ladder.position.z + 0.5;
+                        } else {
+                            rung.position.z = ladder.position.z - 0.5;
+                        }
+                    }
+                    scene.add(rung);
+                }
+                
+                ladder.userData = { type: 'placedLadder' };
+                scene.add(ladder);
+                gameState.ladderObject = ladder;
+            }
+            
+            function startClimbingAnimation() {
+                if(gameState.isClimbing) return;
+                gameState.isClimbing = true;
+                
+                document.getElementById('interactBtn').style.opacity = '0';
+                document.getElementById('controls').style.opacity = '0';
+                document.getElementById('jumpBtn').style.opacity = '0';
+                document.getElementById('useBtn').style.opacity = '0';
+                document.getElementById('dropBtn').style.opacity = '0';
+                document.getElementById('flashlightToggleBtn').style.opacity = '0';
+                document.getElementById('settingsBtn').style.opacity = '0';
+                document.getElementById('devTButton').style.opacity = '0';
+                
+                keys.w = false; keys.s = false; keys.a = false; keys.d = false;
+                
+                const startPos = {
+                    x: camera.position.x,
+                    y: camera.position.y,
+                    z: camera.position.z
+                };
+                
+                const targetPos = {
+                    x: window.exitHole.position.x,
+                    y: window.exitHole.position.y + 0.8,
+                    z: window.exitHole.position.z
+                };
+                
+                let climbProgress = 0;
+                const climbDuration = 4000;
+                const startTime = performance.now();
+                
+                function climbStep() {
+                    const now = performance.now();
+                    const elapsed = now - startTime;
+                    climbProgress = Math.min(1, elapsed / climbDuration);
+                    
+                    if(climbProgress < 1) {
+                        const easeT = 1 - Math.pow(1 - climbProgress, 2);
+                        
+                        camera.position.y = startPos.y + (targetPos.y - startPos.y) * easeT;
+                        
+                        const swayX = Math.sin(elapsed * 0.02) * 0.15 * (1 - climbProgress);
+                        const swayZ = Math.cos(elapsed * 0.025) * 0.15 * (1 - climbProgress);
+                        
+                        if(Math.abs(window.exitHole.position.x) > 190) {
+                            camera.position.x = startPos.x + (targetPos.x - startPos.x) * easeT + swayZ;
+                            camera.position.z = startPos.z + (targetPos.z - startPos.z) * easeT + swayX;
+                        } else {
+                            camera.position.x = startPos.x + (targetPos.x - startPos.x) * easeT + swayX;
+                            camera.position.z = startPos.z + (targetPos.z - startPos.z) * easeT + swayZ;
+                        }
+                        
+                        camera.rotation.x = Math.sin(elapsed * 0.015) * 0.12;
+                        
+                        if(climbProgress > 0.7) {
+                            const zoom = 1 + (climbProgress - 0.7) * 0.6;
+                            camera.fov = 70 / zoom;
+                            camera.updateProjectionMatrix();
+                        }
+                        
+                        requestAnimationFrame(climbStep);
+                    } else {
+                        camera.position.y = targetPos.y;
+                        
+                        setTimeout(() => {
+                            scene.background.setRGB(0.8, 0.8, 1.0);
+                            renderer.setClearColor(0xccccff);
+                            document.body.style.backgroundColor = '#ccccff';
+                            
+                            setTimeout(() => {
+                                scene.background.setRGB(0.4, 0.6, 1.0);
+                                renderer.setClearColor(0x6699ff);
+                                document.body.style.backgroundColor = '#6699ff';
+                                
+                                setTimeout(() => {
+                                    scene.background.setRGB(0.2, 0.4, 1.0);
+                                    renderer.setClearColor(0x3366ff);
+                                    document.body.style.backgroundColor = '#3366ff';
+                                    
+                                    camera.rotation.z = 0.15;
+                                    setTimeout(() => {
+                                        camera.rotation.z = 0;
+                                        // 显示胜利消息，保留再来一局按钮，新增下一关按钮
+                                        document.getElementById('winMessage').style.display = 'block';
+  parent.postMessage({ type: 'levelComplete' }, '*');                                      gameState.isAlive = false;
+                                    }, 150);
+                                }, 150);
+                            }, 150);
+                        }, 100);
+                    }
+                }
+                
+                climbStep();
+            }
+
+            function initDevTools() {
+                const devTButton = document.getElementById('devTButton');
+                
+                const devConsole = document.createElement('div');
+                devConsole.id = 'devConsole';
+                devConsole.innerHTML = `
+                    <div style="color:#ffaa00; font-size:22px; font-weight:bold;">⚡ 开发者</div>
+                    <input type="text" id="devInput" placeholder="give 5 (梯子) / give wrench / give flashlight">
+                    <button id="closeDevBtn">关闭</button>
+                `;
+                document.body.appendChild(devConsole);
+                
+                const devInput = document.getElementById('devInput');
+                const closeBtn = document.getElementById('closeDevBtn');
+                
+                devTButton.addEventListener('click', () => {
+                    devConsole.style.display = 'flex';
+                });
+                
+                devInput.addEventListener('keypress', (e) => {
+                    if(e.key === 'Enter') {
+                        const cmd = devInput.value.trim();
+                        if(cmd === 'give 5') {
+                            gameState.items.ladderPieces = 5;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            devInput.value = '';
+                            alert('✅ 获得5个梯子碎片');
+                        } else if(cmd === 'give wrench') {
+                            gameState.items.wrench = 1;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            devInput.value = '';
+                            alert('✅ 获得扳手');
+                        } else if(cmd === 'give flashlight') {
+                            gameState.hasFlashlight = true;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            devInput.value = '';
+                            alert('✅ 获得手电筒');
+                        } else {
+                            alert('未知命令');
+                        }
+                    }
+                });
+                
+                closeBtn.addEventListener('click', () => {
+                    devConsole.style.display = 'none';
+                    devInput.value = '';
+                });
+            }
+
+            // ==================== 触摸滑动 ====================
+            const touchArea = document.getElementById('touchArea');
+            let lastX = 0;
+            
+            touchArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+            
+            touchArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - lastX;
+                gameState.rotationY -= dx * 0.01;
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+            
+            touchArea.addEventListener('touchend', (e) => {
+                e.preventDefault();
+            }, { passive: false });
+
+            // ==================== 键盘/按钮 ====================
+            const keys = { w: false, s: false, a: false, d: false };
+            
+            document.addEventListener('keydown', (e) => {
+                if(gameState.isCaught || gameState.isClimbing) return;
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = true;
+                    e.preventDefault();
+                } else if(k === ' ') {
+                    handleJump();
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = false;
+                    e.preventDefault();
+                }
+            });
+            
+            document.getElementById('forwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught) keys.w = true; });
+            document.getElementById('forwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.w = false; });
+            document.getElementById('backwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught) keys.s = true; });
+            document.getElementById('backwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.s = false; });
+            document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught) keys.a = true; });
+            document.getElementById('leftBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.a = false; });
+            document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught) keys.d = true; });
+            document.getElementById('rightBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.d = false; });
+            
+            document.getElementById('jumpBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleJump(); });
+            document.getElementById('jumpBtn').addEventListener('touchend', (e) => { e.preventDefault(); });
+            
+            document.getElementById('interactBtn').addEventListener('click', interactHandler);
+            document.getElementById('interactBtn').addEventListener('touchstart', (e) => { e.preventDefault(); interactHandler(); });
+            
+            document.getElementById('useBtn').addEventListener('click', useItem);
+            document.getElementById('useBtn').addEventListener('touchstart', (e) => { e.preventDefault(); useItem(); });
+            
+            // 新增丢弃按钮事件
+            document.getElementById('dropBtn').addEventListener('click', dropItem);
+            document.getElementById('dropBtn').addEventListener('touchstart', (e) => { e.preventDefault(); dropItem(); });
+            
+            document.getElementById('flashlightToggleBtn').addEventListener('click', () => {
+                if(gameState.hasFlashlight && gameState.activeSlot === gameState.flashlightSlotIndex) {
+                    gameState.flashlightOn = !gameState.flashlightOn;
+                }
+                updateUI();
+            });
+            
+            document.querySelectorAll('.inventory-slot').forEach((slot, idx) => {
+                slot.addEventListener('click', () => {
+                    if(slot.classList.contains('has-item')) {
+                        document.querySelectorAll('.inventory-slot').forEach(s => s.classList.remove('active'));
+                        slot.classList.add('active');
+                        gameState.activeSlot = idx;
+                    }
+                    updateUI();
+                });
+            });
+            
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+            
+            settingsBtn.onclick = () => {
+                settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+            };
+            
+            document.getElementById('closeSettingsBtn').onclick = () => {
+                settingsPanel.style.display = 'none';
+            };
+            
+            document.getElementById('qualityLow').onclick = () => applyQualitySettings('low');
+            document.getElementById('qualityMid').onclick = () => applyQualitySettings('mid');
+            document.getElementById('qualityHigh').onclick = () => applyQualitySettings('high');
+
+            let lastTime = performance.now();
+            let catchStartTime = 0;
+            
+            function updatePlayer() {
+                const now = performance.now();
+                const deltaTime = Math.min(0.1, (now - lastTime) / 1000);
+                lastTime = now;
+                
+                if(!gameState.isAlive) return;
+                
+                if(gameState.isCaught) {
+                    if(catchStartTime === 0) catchStartTime = now;
+                    const caughtElapsed = now - catchStartTime;
+                    
+                    if(window.monster) {
+                        const dx = window.monster.position.x - gameState.player.x;
+                        const dz = window.monster.position.z - gameState.player.z;
+                        gameState.rotationY = Math.atan2(dx, dz);
+                    }
+                    
+                    if(caughtElapsed >= 5000) {
+                        startDeathSequence();
+                    }
+                    return;
+                }
+                
+                if(gameState.isClimbing) return;
+                
+                updateJump();
+                
+                const speed = 0.22;
+                let nx = gameState.player.x;
+                let nz = gameState.player.z;
+                
+                if(keys.w) { nx -= Math.sin(gameState.rotationY) * speed; nz -= Math.cos(gameState.rotationY) * speed; }
+                if(keys.s) { nx += Math.sin(gameState.rotationY) * speed; nz += Math.cos(gameState.rotationY) * speed; }
+                if(keys.a) { nx -= Math.cos(gameState.rotationY) * speed; nz += Math.sin(gameState.rotationY) * speed; }
+                if(keys.d) { nx += Math.cos(gameState.rotationY) * speed; nz -= Math.sin(gameState.rotationY) * speed; }
+                
+                if(!checkCollision(nx, gameState.player.z)) gameState.player.x = nx;
+                if(!checkCollision(gameState.player.x, nz)) gameState.player.z = nz;
+                
+              // 把身体放在相机后面 2 个单位的位置
+const bodyOffset = 2.0; // 身体在相机后面的距离
+playerBody.position.set(
+    gameState.player.x + Math.sin(gameState.rotationY) * bodyOffset,
+    gameState.player.y - 0.8,
+    gameState.player.z + Math.cos(gameState.rotationY) * bodyOffset
+);
+// 身体始终面向和相机相同的方向
+playerBody.rotation.y = gameState.rotationY;
+
+// 相机位置 - 放在身体前面上方
+camera.position.set(
+    gameState.player.x, 
+    gameState.player.y + 0.2, 
+    gameState.player.z + 1.5  // 稍微近一点
+);
+camera.rotation.set(0, gameState.rotationY, 0);  // 相机看向前方
+                
+                if(gameState.hasFlashlight && gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlightOn) {
+                    flashlight.visible = true;
+                    flashlight.position.copy(camera.position);
+                    flashlightTarget.position.set(
+                        camera.position.x - Math.sin(gameState.rotationY) * 15,
+                        camera.position.y - 0.2,
+                        camera.position.z - Math.cos(gameState.rotationY) * 15
+                    );
+                } else {
+                    flashlight.visible = false;
+                }
+                
+                const m = window.monster;
+                if(m) {
+                    m.userData.breathTimer = (m.userData.breathTimer || 0) + deltaTime;
+                    m.position.y = 0.5 + Math.sin(m.userData.breathTimer * 2) * 0.05;
+                    
+                    const dx = gameState.player.x - m.position.x;
+                    const dz = gameState.player.z - m.position.z;
+                    const dist = Math.sqrt(dx*dx + dz*dz);
+                    
+                    m.lookAt(gameState.player.x, 2.0, gameState.player.z);
+                    
+                    if(dist < m.userData.range && !m.userData.isChasing) m.userData.isChasing = true;
+                    if(m.userData.isChasing && dist > m.userData.chaseRange) m.userData.isChasing = false;
+                    
+                    if(!m.userData.isChasing) {
+                        if(now - m.userData.lastTeleport > m.userData.teleportInterval) {
+                            let tx, tz;
+                            do {
+                                tx = (Math.random() - 0.5) * 320;
+                                tz = (Math.random() - 0.5) * 160;
+                            } while(Math.hypot(tx - gameState.player.x, tz - gameState.player.z) < 40);
+                            m.position.set(tx, 0.5, tz);
+                            m.userData.lastTeleport = now;
+                        }
+                    } else {
+                        if(dist > 3.0) {
+                            let moveX = (dx/dist) * m.userData.speed;
+                            let moveZ = (dz/dist) * m.userData.speed;
+                            
+                            let newX = m.position.x + moveX;
+                            if(!checkCollision(newX, m.position.z)) m.position.x = newX;
+                            
+                            let newZ = m.position.z + moveZ;
+                            if(!checkCollision(m.position.x, newZ)) m.position.z = newZ;
+                        }
+                        
+                        if(dist < 3.5 && !gameState.isCaught) {
+                            gameState.isCaught = true;
+                            catchStartTime = now;
+                            document.getElementById('caughtMessage').style.display = 'block';
+                            
+                            m.children.forEach(child => {
+                                if(child.geometry.type === 'CylinderGeometry') {
+                                    child.rotation.x += 0.5;
+                                    child.rotation.z += 0.3;
+                                }
+                            });
+                        }
+                    }
+                }
+                
+                if(m && !gameState.isCaught) {
+                    const dist = Math.hypot(gameState.player.x - m.position.x, gameState.player.z - m.position.z);
+                    if(m.userData.isChasing) {
+                        if(dist < 20) {
+                            gameState.sanity -= gameState.sanityDrainRate * deltaTime * 8;
+                        } else if(dist < 35) {
+                            gameState.sanity -= gameState.sanityDrainRate * deltaTime * 5;
+                        } else {
+                            gameState.sanity -= gameState.sanityDrainRate * deltaTime * 3;
+                        }
+                    } else {
+                        if(dist < 20) {
+                            gameState.sanity -= gameState.sanityDrainRate * deltaTime * 3;
+                        } else if(dist < 35) {
+                            gameState.sanity -= gameState.sanityDrainRate * deltaTime * 2;
+                        } else {
+                            gameState.sanity -= gameState.sanityDrainRate * deltaTime;
+                        }
+                    }
+                    gameState.sanity = Math.max(0, Math.min(100, gameState.sanity));
+                    
+                    if(gameState.sanity <= 0) {
+                        gameState.isAlive = false;
+                        document.getElementById('sanityDeathMessage').style.display = 'block';
+                    }
+                }
+                
+                gameState.nearItem = null;
+                gameState.nearExit = false;
+                gameState.nearLadderObject = false;
+                
+                const px = gameState.player.x;
+                const pz = gameState.player.z;
+                
+                items.forEach(item => {
+                    if(item.position && Math.hypot(px - item.position.x, pz - item.position.z) < 2.5)
+                        gameState.nearItem = item;
+                });
+                
+                if(window.exitHole && Math.hypot(px - window.exitHole.position.x, pz - window.exitHole.position.z) < 3.0) {
+                    gameState.nearExit = true;
+                }
+                
+                if(gameState.ladderObject) {
+                    const dist = Math.hypot(px - gameState.ladderObject.position.x, pz - gameState.ladderObject.position.z);
+                    if(dist < 3.0) gameState.nearLadderObject = true;
+                }
+                
+                let hintText = '';
+                if(gameState.nearItem) {
+                    const type = gameState.nearItem.userData.type;
+                    if(type === 'ladder') hintText = '🪜 捡起梯子碎片';
+                    else if(type === 'wrench') hintText = '🔧 捡起扳手';
+                    else if(type === 'almond') hintText = '🧪 捡起杏仁水';
+                    else if(type === 'flashlight') hintText = '🔦 捡起手电筒';
+                    else if(type === 'key') hintText = '🔑 捡起钥匙';
+                    else if(type === 'door') hintText = '🚪 打开门';
+                    else if(type === 'specialDoor') hintText = '🔴 需要钥匙';
+                } else if(gameState.nearExit && gameState.items.ladderPieces === 5 && !gameState.ladderPlaced) {
+                    hintText = '🔨 放置梯子';
+                } else if(gameState.ladderPlaced && !gameState.ladderSecured && gameState.nearLadderObject && gameState.items.wrench > 0) {
+                    hintText = '🔧 使用扳手加固';
+                } else if(gameState.ladderPlaced && gameState.ladderSecured && gameState.nearLadderObject) {
+                    hintText = '🧗 爬梯子';
+                }
+                
+                document.getElementById('interactionHint').style.display = hintText ? 'block' : 'none';
+                document.getElementById('interactionHint').textContent = hintText || '🔍';
+                
+                updateUI();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                updatePlayer();
+                renderer.render(scene, camera);
+            }
+
+            buildScene();
+            applyQualitySettings('high');
+            updateUI();
+            initDevTools();
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        })();
+    </script>
+</body>
+</html>

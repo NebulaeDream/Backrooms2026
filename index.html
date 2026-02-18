@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Backroom 2026 1.0</title>
+    <style>
+        /* ==================== 完全保留之前的样式 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #d4c541;
+        }
+
+        /* 启动界面 */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #d4c541;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        #start-screen h1 {
+            font-size: clamp(3rem, 15vw, 6rem);
+            color: black;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 3rem;
+            text-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .start-options {
+            display: flex;
+            gap: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .start-btn {
+            font-size: clamp(2rem, 6vw, 3rem);
+            padding: 1.2rem 3rem;
+            background: black;
+            color: white;
+            border: none;
+            border-radius: 4rem;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #5a4e2b;
+            transition: transform 0.1s, box-shadow 0.1s;
+            min-width: 240px;
+            font-weight: bold;
+        }
+
+        .start-btn:active {
+            transform: translateY(8px);
+            box-shadow: none;
+        }
+
+        /* 通用面板 */
+        .panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #d4c541;
+            display: none;
+            z-index: 900;
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .panel-header h2 {
+            font-size: clamp(2rem, 6vw, 2.8rem);
+            color: black;
+        }
+
+        .back-btn {
+            font-size: 1.5rem;
+            padding: 0.6rem 2rem;
+            background: black;
+            color: white;
+            border: none;
+            border-radius: 3rem;
+            cursor: pointer;
+        }
+
+        /* 左右分栏 */
+        .split {
+            display: flex;
+            gap: 2rem;
+            height: calc(100% - 6rem);
+            flex-wrap: wrap;
+        }
+
+        .left-col, .right-col {
+            flex: 1 1 300px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 2rem;
+            padding: 1.5rem;
+            overflow-y: auto;
+            min-width: 250px;
+        }
+
+        .col-title {
+            font-size: 1.8rem;
+            color: black;
+            margin-bottom: 1rem;
+            text-align: center;
+            border-bottom: 2px solid black;
+            padding-bottom: 0.5rem;
+        }
+
+        /* 存档项 */
+        .save-item {
+            background: rgba(255,255,255,0.3);
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid black;
+            overflow: hidden;
+        }
+
+        .save-content {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .save-content:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .save-info {
+            flex: 1;
+        }
+
+        .save-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: black;
+        }
+
+        .save-detail {
+            font-size: 0.9rem;
+            color: #333;
+            margin-top: 0.3rem;
+        }
+
+        .save-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: 0.5rem;
+        }
+
+        .action-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: black;
+            color: white;
+            border: 2px solid #5a4e2b;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.1s;
+        }
+
+        .action-btn:active {
+            transform: scale(0.9);
+        }
+
+        .delete-btn {
+            background: #aa2222;
+        }
+
+        .copy-btn {
+            background: #2266aa;
+        }
+
+        /* 新建游戏 */
+        .new-game-input {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.2rem;
+            border: 2px solid black;
+            border-radius: 2rem;
+            background: rgba(255,255,255,0.5);
+            margin-bottom: 1rem;
+            outline: none;
+        }
+
+        .new-game-btn {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.5rem;
+            background: black;
+            color: white;
+            border: none;
+            border-radius: 3rem;
+            cursor: pointer;
+        }
+
+        /* 私有服务器区域 - 新增 */
+        .private-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .plus-btn {
+            width: 6rem;
+            height: 6rem;
+            background: black;
+            color: #d4c541;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            cursor: pointer;
+            margin-bottom: 2rem;
+            transition: transform 0.2s;
+            border: 4px solid #5a4e2b;
+        }
+
+        .plus-btn:active {
+            transform: scale(0.9);
+        }
+
+        .private-options {
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .private-options button {
+            padding: 1rem;
+            font-size: 1.4rem;
+            background: black;
+            color: white;
+            border: none;
+            border-radius: 3rem;
+            cursor: pointer;
+        }
+
+        /* 公开服务器列表 - 新增 */
+        .server-item {
+            background: rgba(255,255,255,0.3);
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid black;
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .server-item:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .server-info {
+            flex: 1;
+        }
+
+        .server-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: black;
+        }
+
+        .server-players {
+            font-size: 1rem;
+            color: #333;
+            margin-top: 0.3rem;
+        }
+
+        .join-indicator {
+            font-size: 1.2rem;
+            color: black;
+            margin-left: 1rem;
+        }
+
+        /* 模态框 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: #d4c541;
+            border: 4px solid black;
+            border-radius: 2rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 350px;
+        }
+
+        .modal-content h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: black;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 1rem;
+            margin: 0.5rem 0 1rem;
+            border: 2px solid black;
+            border-radius: 2rem;
+            font-size: 1rem;
+            background: rgba(255,255,255,0.5);
+            outline: none;
+        }
+
+        .modal-content button {
+            width: 100%;
+            padding: 1rem;
+            background: black;
+            color: white;
+            border: none;
+            border-radius: 3rem;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        .modal-content .cancel-btn {
+            background: #666;
+            margin-top: 0.5rem;
+        }
+
+        /* 游戏容器 */
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 500;
+        }
+
+        #game-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+
+        /* 聊天框 - 新增 */
+        #chat-container {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 300px;
+            max-height: 200px;
+            background: rgba(255, 255, 0, 0.3);
+            border: 2px solid black;
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        #chat-messages {
+            flex: 1;
+            padding: 5px;
+            overflow-y: auto;
+            font-size: 14px;
+            color: black;
+            max-height: 150px;
+        }
+
+        #chat-input-area {
+            display: flex;
+            border-top: 1px solid black;
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 5px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: black;
+            font-size: 14px;
+        }
+
+        #chat-send {
+            background: black;
+            color: #d4c541;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        
+
+        #deathOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0044aa;
+            display: none;
+            z-index: 10000;
+            pointer-events: none;
+        }
+    </style>
+
+    <!-- 引入 PeerJS 用于多人联机 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
+    <!-- 简单起见，不使用 Firebase，用内存模拟公开服务器列表 -->
+</head>
+<body>
+    <!-- 启动界面 -->
+    <div id="start-screen">
+        <h1>BACKROOM 2026 1.0</h1>
+        <div class="start-options">
+            <button class="start-btn" id="singleplayer-btn">单人游戏</button>
+            <button class="start-btn" id="multiplayer-btn">多人游戏</button>
+        </div>
+    </div>
+
+    <!-- 单人游戏面板 -->
+    <div id="singleplayer-panel" class="panel">
+        <div class="panel-header">
+            <h2>单人游戏</h2>
+            <button class="back-btn" id="back-from-single">返回</button>
+        </div>
+        <div class="split">
+            <div class="left-col">
+                <div class="col-title">已有游戏</div>
+                <div id="save-list"></div>
+            </div>
+            <div class="right-col">
+                <div class="col-title">创建新游戏</div>
+                <input type="text" id="new-game-name" class="new-game-input" placeholder="输入游戏名称" maxlength="20">
+                <button class="new-game-btn" id="start-new-game">开始游戏</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 多人游戏面板 - 保留原样，添加私有/公开服务器 -->
+    <div id="multiplayer-panel" class="panel">
+        <div class="panel-header">
+            <h2>多人游戏</h2>
+            <button class="back-btn" id="back-from-multi">返回</button>
+        </div>
+        <div class="split">
+            <div class="left-col">
+                <div class="col-title">🔒 私有服务器</div>
+                <div class="private-area">
+                    <div class="plus-btn" id="private-plus">+</div>
+                    <div id="private-options" class="private-options">
+                        <button id="create-private">创建私有服务器</button>
+                        <button id="join-private">加入私有服务器</button>
+                    </div>
+                </div>
+            </div>
+            <div class="right-col">
+                <div class="col-title">🌍 公开服务器</div>
+                <div style="margin-bottom: 1rem; text-align: center;">
+                    <button class="new-game-btn" id="create-public" style="width: auto; padding: 0.8rem 2rem;">+ 创建公开房间</button>
+                </div>
+                <div id="public-server-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏容器 -->
+    <div id="game-container">
+        <iframe id="game-frame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"></iframe>
+        <div id="chat-container">
+            <div id="chat-messages"></div>
+            <div id="chat-input-area">
+                <input type="text" id="chat-input" placeholder="说点什么...">
+                <button id="chat-send">发送</button>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- 模态框 -->
+    <div id="id-modal" class="modal">
+        <div class="modal-content">
+            <h3>输入你的ID</h3>
+            <input type="text" id="player-id-input" placeholder="例如: 探险家" value="玩家">
+            <p id="id-error" style="color: red; font-size: 0.9rem; display: none;">不能包含“俊恺”</p>
+            <button id="confirm-id">确认</button>
+            <button class="cancel-btn" id="cancel-id">取消</button>
+        </div>
+    </div>
+
+    <div id="create-private-modal" class="modal">
+        <div class="modal-content">
+            <h3>创建私有服务器</h3>
+            <input type="text" id="private-room-name" placeholder="房间名称" maxlength="20">
+            <input type="password" id="private-password" placeholder="密码">
+            <button id="confirm-create-private">创建</button>
+            <button class="cancel-btn" id="cancel-create-private">取消</button>
+        </div>
+    </div>
+
+    <div id="join-private-modal" class="modal">
+        <div class="modal-content">
+            <h3>加入私有服务器</h3>
+            <input type="password" id="join-password" placeholder="密码">
+            <button id="confirm-join-private">加入</button>
+            <button class="cancel-btn" id="cancel-join-private">取消</button>
+        </div>
+    </div>
+
+    <div id="create-public-modal" class="modal">
+        <div class="modal-content">
+            <h3>创建公开房间</h3>
+            <input type="text" id="public-room-name" placeholder="房间名称" maxlength="20">
+            <button id="confirm-create-public">创建</button>
+            <button class="cancel-btn" id="cancel-create-public">取消</button>
+        </div>
+    </div>
+          <div id="create-public-modal" class="modal">
+    <div class="modal-content">
+        <h3>创建公开房间</h3>
+        <input type="text" id="public-room-name" placeholder="房间名称" maxlength="20">
+        <button id="confirm-create-public">创建</button>
+        <button class="cancel-btn" id="cancel-create-public">取消</button>
+    </div>
+</div>
+
+<!-- 新增：房间ID显示模态框 -->
+<div id="room-id-modal" class="modal">
+    <div class="modal-content">
+        <h3>🎮 房间创建成功</h3>
+        <p style="margin: 1rem 0;">房间名称: <strong id="display-room-name"></strong></p>
+        <p>房间ID: <strong id="display-room-id" style="font-size: 1.5rem; color: #aa2222;"></strong></p>
+        <p style="margin: 1rem 0;">密码: <strong id="display-room-pwd"></strong></p>
+        <p style="font-size: 0.9rem; color: #333;">把这个ID和密码告诉你的朋友</p>
+        <button id="copy-room-id" style="background: #2266aa; width: 100%; padding: 1rem; margin-bottom: 0.5rem;">复制ID</button>
+        <button class="cancel-btn" id="close-room-modal" style="width: 100%;">确定</button>
+    </div>
+</div>
+
+    <div id="deathOverlay"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        (function() {
+            "use strict";
+
+            // ---------- 关卡顺序 ----------
+            const LEVELS = [
+                'level0.html',
+                'Level1.html',
+                'level2.html',
+                'Level fun.html',
+                'level2.html',
+                'level3.html',
+                'Level4.html',
+                'Level9999.html',
+                'Level94.html',
+                'Level!.html'
+            ];
+
+            // 当前游戏状态
+            const gameState = {
+                currentGameType: null,      // 'single' or 'multi'
+                currentSaveName: null,
+                currentLevelIndex: 0,
+                multiplayer: {
+                    isHost: false,
+                    roomId: null,
+                    roomName: null,
+                    isPrivate: false,
+                    password: null,
+                    peer: null,
+                    connections: [],
+                    localPlayerId: null,
+                    playerName: '',
+                    // 模拟公开服务器列表（内存中）
+                    publicRooms: {}
+                }
+            };
+
+            // UI 元素
+            const startScreen = document.getElementById('start-screen');
+            const singlePanel = document.getElementById('singleplayer-panel');
+            const multiPanel = document.getElementById('multiplayer-panel');
+            const gameContainer = document.getElementById('game-container');
+            const gameFrame = document.getElementById('game-frame');
+            const deathOverlay = document.getElementById('deathOverlay');
+            const chatContainer = document.getElementById('chat-container');
+            const chatMessages = document.getElementById('chat-messages');
+            const chatInput = document.getElementById('chat-input');
+            const chatSend = document.getElementById('chat-send');
+            
+
+            const saveListDiv = document.getElementById('save-list');
+            const newGameNameInput = document.getElementById('new-game-name');
+
+            // 多人UI元素
+            const privatePlus = document.getElementById('private-plus');
+            const privateOptions = document.getElementById('private-options');
+            const createPrivateBtn = document.getElementById('create-private');
+            const joinPrivateBtn = document.getElementById('join-private');
+            const createPublicBtn = document.getElementById('create-public');
+            const publicServerList = document.getElementById('public-server-list');
+
+            // 模态框
+            const idModal = document.getElementById('id-modal');
+            const playerIdInput = document.getElementById('player-id-input');
+            const idError = document.getElementById('id-error');
+            const confirmId = document.getElementById('confirm-id');
+            const cancelId = document.getElementById('cancel-id');
+
+            const createPrivateModal = document.getElementById('create-private-modal');
+            const privateRoomName = document.getElementById('private-room-name');
+            const privatePassword = document.getElementById('private-password');
+            const confirmCreatePrivate = document.getElementById('confirm-create-private');
+            const cancelCreatePrivate = document.getElementById('cancel-create-private');
+
+            const joinPrivateModal = document.getElementById('join-private-modal');
+            const joinPassword = document.getElementById('join-password');
+            const confirmJoinPrivate = document.getElementById('confirm-join-private');
+            const cancelJoinPrivate = document.getElementById('cancel-join-private');
+
+            const createPublicModal = document.getElementById('create-public-modal');
+            const publicRoomName = document.getElementById('public-room-name');
+            const confirmCreatePublic = document.getElementById('confirm-create-public');
+            const cancelCreatePublic = document.getElementById('cancel-create-public');
+
+            // ---------- 工具函数 ----------
+            function showStartScreen() {
+                startScreen.style.display = 'flex';
+                singlePanel.style.display = 'none';
+                multiPanel.style.display = 'none';
+                gameContainer.style.display = 'none';
+            }
+
+            function hideAllPanels() {
+                startScreen.style.display = 'none';
+                singlePanel.style.display = 'none';
+                multiPanel.style.display = 'none';
+            }
+
+            function validatePlayerName(name) {
+                return !name.includes('俊恺');
+            }
+
+            function showIdModal(callback) {
+                playerIdInput.value = '玩家';
+                idError.style.display = 'none';
+                idModal.style.display = 'flex';
+
+                const onConfirm = () => {
+                    const name = playerIdInput.value.trim();
+                    if (!name) {
+                        alert('请输入ID');
+                        return;
+                    }
+                    if (!validatePlayerName(name)) {
+                        idError.style.display = 'block';
+                        return;
+                    }
+                    idModal.style.display = 'none';
+                    cleanup();
+                    callback(name);
+                };
+
+                const onCancel = () => {
+                    idModal.style.display = 'none';
+                    cleanup();
+                };
+
+                const cleanup = () => {
+                    confirmId.removeEventListener('click', onConfirm);
+                    cancelId.removeEventListener('click', onCancel);
+                };
+
+                confirmId.addEventListener('click', onConfirm);
+                cancelId.addEventListener('click', onCancel);
+            }
+
+            // ---------- 单人游戏存档 ----------
+            function getSaves() {
+                return JSON.parse(localStorage.getItem('backroom_saves') || '[]');
+            }
+
+            function saveGame(name, levelIndex) {
+    const saves = getSaves();
+    const existing = saves.find(s => s.name === name);
+    const levelName = LEVELS[levelIndex] || 'Unknown';
+    if (existing) {
+        existing.level = levelName;
+        existing.levelIndex = levelIndex;  // 确保这里保存的是数字索引
+        existing.time = Date.now();
+    } else {
+        saves.push({ 
+            name, 
+            level: levelName, 
+            levelIndex: levelIndex,  // 新存档也要保存数字索引
+            time: Date.now() 
+        });
+    }
+    localStorage.setItem('backroom_saves', JSON.stringify(saves));
+}
+
+            function deleteSave(name) {
+                const saves = getSaves();
+                const newSaves = saves.filter(s => s.name !== name);
+                localStorage.setItem('backroom_saves', JSON.stringify(newSaves));
+                loadSaveList();
+            }
+
+            function copySave(originalName, levelIndex, levelName) {
+                const saves = getSaves();
+                let newName = '';
+                let counter = 1;
+                while (true) {
+                    newName = `${originalName}(${counter})`;
+                    if (!saves.some(s => s.name === newName)) break;
+                    counter++;
+                }
+                saves.push({ name: newName, level: levelName, levelIndex, time: Date.now() });
+                localStorage.setItem('backroom_saves', JSON.stringify(saves));
+                loadSaveList();
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            function loadSaveList() {
+                const saves = getSaves();
+                saveListDiv.innerHTML = '';
+                if (saves.length === 0) {
+                    saveListDiv.innerHTML = '<div style="text-align:center; color:#333; padding:2rem;">暂无存档</div>';
+                    return;
+                }
+                saves.sort((a,b) => b.time - a.time);
+                saves.forEach(save => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'save-item';
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'save-content';
+                    const infoDiv = document.createElement('div');
+                    infoDiv.className = 'save-info';
+                    infoDiv.innerHTML = `
+                        <div class="save-name">${escapeHtml(save.name)}</div>
+                        <div class="save-detail">关卡: ${escapeHtml(save.level)} | ${new Date(save.time).toLocaleString()}</div>
+                    `;
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'save-actions';
+                    
+                    const copyBtn = document.createElement('div');
+                    copyBtn.className = 'action-btn copy-btn';
+                    copyBtn.textContent = '📄';
+                    copyBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        copySave(save.name, save.levelIndex || 0, save.level);
+                    });
+                    
+                    const deleteBtn = document.createElement('div');
+                    deleteBtn.className = 'action-btn delete-btn';
+                    deleteBtn.textContent = '❌';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (confirm(`删除存档“${save.name}”？`)) deleteSave(save.name);
+                    });
+                    
+                    actionsDiv.appendChild(copyBtn);
+                    actionsDiv.appendChild(deleteBtn);
+                    contentDiv.appendChild(infoDiv);
+                    contentDiv.appendChild(actionsDiv);
+                    
+                    contentDiv.addEventListener('click', () => {
+                        gameState.currentSaveName = save.name;
+                        gameState.currentLevelIndex = save.levelIndex || 0;
+                        startSingleGame();
+                    });
+                    
+                    itemDiv.appendChild(contentDiv);
+                    saveListDiv.appendChild(itemDiv);
+                });
+            }
+
+            // ---------- 游戏启动 ----------
+            function startSingleGame() {
+                gameState.currentGameType = 'single';
+                hideAllPanels();
+                gameContainer.style.display = 'block';
+                chatContainer.style.display = 'none';
+                
+                loadLevel(gameState.currentLevelIndex);
+            }
+
+            function startMultiplayerGame() {
+    gameState.currentGameType = 'multi';
+    hideAllPanels();
+    gameContainer.style.display = 'block';
+    chatContainer.style.display = 'flex';
+    // 多人游戏从第一关开始
+    loadLevel(0);
+}
+
+            function loadLevel(index) {
+                if (index >= LEVELS.length) {
+                    alert('恭喜！你完成了所有关卡！');
+                    showStartScreen();
+                    return;
+                }
+                const levelFile = LEVELS[index];
+                gameFrame.src = levelFile;
+            }
+
+            // ---------- 处理 iframe 消息 ----------
+            window.addEventListener('message', (event) => {
+                const data = event.data;
+                if (!data || typeof data !== 'object') return;
+
+                switch (data.type) {
+                    case 'levelComplete':
+    gameState.currentLevelIndex++;
+    if (gameState.currentGameType === 'single' && gameState.currentSaveName) {
+        saveGame(gameState.currentSaveName, gameState.currentLevelIndex); // 添加这行
+    }
+    loadLevel(gameState.currentLevelIndex);
+    break;
+                    case 'playerDeath':
+                        deathOverlay.style.display = 'block';
+                        setTimeout(() => {
+                            deathOverlay.style.display = 'none';
+                            showStartScreen();
+                        }, 1000);
+                        break;
+                }
+            });
+
+            // ---------- 多人网络（简化版，使用内存模拟公开服务器）----------
+            function updatePublicServerList() {
+                publicServerList.innerHTML = '';
+                for (let roomId in gameState.multiplayer.publicRooms) {
+                    const room = gameState.multiplayer.publicRooms[roomId];
+                    const div = document.createElement('div');
+                    div.className = 'server-item';
+                    div.innerHTML = `
+                        <div class="server-info">
+                            <div class="server-name">${escapeHtml(room.name)}</div>
+                            <div class="server-players">👥 ${room.playerCount}/4</div>
+                        </div>
+                        <div class="join-indicator">点击加入</div>
+                    `;
+                    div.addEventListener('click', () => {
+                        joinPublicRoom(roomId, room);
+                    });
+                    publicServerList.appendChild(div);
+                }
+            }
+
+            function joinPublicRoom(roomId, room) {
+    showIdModal((playerName) => {
+        gameState.multiplayer.isHost = false;
+        gameState.multiplayer.roomId = roomId;
+        gameState.multiplayer.roomName = room.name;
+        gameState.multiplayer.isPrivate = false;
+        gameState.multiplayer.playerName = playerName;
+
+        // 同样使用 STUN+TURN 配置
+        const peer = new Peer({
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    {
+                        urls: 'turn:turn.ztun.org:3478',
+                        username: 'free',
+                        credential: 'free'
+                    },
+                    {
+                        urls: 'turn:turn.ztun.org:3478?transport=tcp',
+                        username: 'free',
+                        credential: 'free'
+                    }
+                ]
+            }
+        });
+        
+        peer.on('open', (id) => {
+            gameState.multiplayer.localPlayerId = id;
+            
+            // 显示连接中提示
+            const connectingDiv = document.createElement('div');
+            connectingDiv.id = 'connecting-toast';
+            connectingDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: black;
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 2rem;
+                z-index: 3000;
+            `;
+            connectingDiv.textContent = '正在连接房间...';
+            document.body.appendChild(connectingDiv);
+
+            // 连接时带上玩家名作为metadata
+            const conn = peer.connect(roomId, {
+                reliable: true,
+                serialization: 'json',
+                metadata: { playerName: playerName }
+            });
+
+            const timeout = setTimeout(() => {
+                document.body.removeChild(connectingDiv);
+                alert('连接超时，请稍后重试');
+                peer.destroy();
+            }, 10000);
+
+            conn.on('open', () => {
+                clearTimeout(timeout);
+                document.body.removeChild(connectingDiv);
+                
+                gameState.multiplayer.connections = [conn];
+                gameState.multiplayer.peer = peer;
+                setupConnection(conn);
+                startMultiplayerGame();
+            });
+
+            conn.on('error', (err) => {
+                clearTimeout(timeout);
+                document.body.removeChild(connectingDiv);
+                alert('连接失败：' + err.message);
+                peer.destroy();
+            });
+        });
+
+        peer.on('error', (err) => {
+            alert('连接失败：' + err.message);
+            console.error('Peer error:', err);
+            showStartScreen();
+        });
+    });
+}
+
+            function createPublicRoom(roomName) {
+    showIdModal((playerName) => {
+        gameState.multiplayer.isHost = true;
+        gameState.multiplayer.roomName = roomName;
+        gameState.multiplayer.isPrivate = false;
+        gameState.multiplayer.playerName = playerName;
+
+        // 使用 STUN+TURN 配置，确保跨互联网连接
+        const peer = new Peer({
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    {
+                        urls: 'turn:turn.ztun.org:3478',
+                        username: 'free',
+                        credential: 'free'
+                    },
+                    {
+                        urls: 'turn:turn.ztun.org:3478?transport=tcp',
+                        username: 'free',
+                        credential: 'free'
+                    }
+                ]
+            }
+        });
+        
+        peer.on('open', (id) => {
+            gameState.multiplayer.roomId = id;
+            gameState.multiplayer.localPlayerId = id;
+            gameState.multiplayer.peer = peer;
+
+            // 添加到公开列表
+            gameState.multiplayer.publicRooms[id] = {
+                name: roomName,
+                hostId: id,
+                playerCount: 1
+            };
+            updatePublicServerList();
+
+            // 监听新连接
+            peer.on('connection', (conn) => {
+                gameState.multiplayer.connections.push(conn);
+                setupConnection(conn);
+                
+                // 更新人数
+                gameState.multiplayer.publicRooms[id].playerCount = 
+                    gameState.multiplayer.connections.length + 1;
+                updatePublicServerList();
+
+                // 发送欢迎消息
+                const welcomeMsg = {
+                    type: 'system',
+                    msg: `${conn.metadata?.playerName || '新玩家'} 加入了房间`
+                };
+                gameState.multiplayer.connections.forEach(c => c.send(welcomeMsg));
+            });
+
+            startMultiplayerGame();
+        });
+
+        peer.on('error', (err) => {
+            alert('创建房间失败：' + err.message);
+            console.error('Peer error:', err);
+            showStartScreen();
+        });
+    });
+}
+
+            function createPrivateRoom(roomName, password) {
+    showIdModal((playerName) => {
+        gameState.multiplayer.isHost = true;
+        gameState.multiplayer.roomName = roomName;
+        gameState.multiplayer.isPrivate = true;
+        gameState.multiplayer.password = password;
+        gameState.multiplayer.playerName = playerName;
+
+        // 配置 STUN + TURN 服务器，实现跨互联网联机
+        const peer = new Peer({
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    // 免费公共 TURN 服务器，用于数据转发
+                    {
+                        urls: 'turn:turn.ztun.org:3478',
+                        username: 'free',
+                        credential: 'free'
+                    },
+                    {
+                        urls: 'turn:turn.ztun.org:3478?transport=tcp',
+                        username: 'free',
+                        credential: 'free'
+                    },
+                    {
+                        urls: 'turns:turn.ztun.org:5349',
+                        username: 'free',
+                        credential: 'free'
+                    }
+                ]
+            }
+        });
+        
+        peer.on('open', (id) => {
+            gameState.multiplayer.roomId = id;
+            gameState.multiplayer.localPlayerId = id;
+            gameState.multiplayer.peer = peer;
+
+            // 显示房间ID模态框
+            showRoomIdModal(id, roomName, password);
+
+            peer.on('connection', (conn) => {
+                // 验证密码
+                conn.on('data', (data) => {
+                    if (data.type === 'auth') {
+                        if (data.password === password) {
+                            conn.send({ type: 'auth_success' });
+                            gameState.multiplayer.connections.push(conn);
+                            setupConnection(conn);
+                            
+                            // 通知所有玩家有新玩家加入
+                            const joinMsg = {
+                                type: 'system',
+                                msg: `${data.playerName} 加入了房间`
+                            };
+                            gameState.multiplayer.connections.forEach(c => c.send(joinMsg));
+                            addSystemMessage(`${data.playerName} 加入了房间`);
+                        } else {
+                            conn.send({ type: 'auth_fail' });
+                            conn.close();
+                        }
+                    }
+                });
+            });
+
+            startMultiplayerGame();
+        });
+
+        peer.on('error', (err) => {
+            alert('连接服务器失败，请检查网络后重试');
+            console.error('Peer error:', err);
+            showStartScreen();
+        });
+    });
+}
+
+            function joinPrivateRoom(password) {
+    // 先输入房间ID
+    const hostId = prompt('请输入房主的房间ID');
+    if (!hostId) return;
+
+    showIdModal((playerName) => {
+        gameState.multiplayer.isHost = false;
+        gameState.multiplayer.roomId = hostId;
+        gameState.multiplayer.isPrivate = true;
+        gameState.multiplayer.password = password;
+        gameState.multiplayer.playerName = playerName;
+
+        // 同样配置 STUN + TURN 服务器
+        const peer = new Peer({
+            config: {
+                'iceServers': [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun3.l.google.com:19302' },
+                    { urls: 'stun:stun4.l.google.com:19302' },
+                    {
+                        urls: 'turn:turn.ztun.org:3478',
+                        username: 'free',
+                        credential: 'free'
+                    },
+                    {
+                        urls: 'turn:turn.ztun.org:3478?transport=tcp',
+                        username: 'free',
+                        credential: 'free'
+                    },
+                    {
+                        urls: 'turns:turn.ztun.org:5349',
+                        username: 'free',
+                        credential: 'free'
+                    }
+                ]
+            }
+        });
+        
+        peer.on('open', (id) => {
+            gameState.multiplayer.localPlayerId = id;
+            
+            // 显示连接中提示
+            const connectingDiv = document.createElement('div');
+            connectingDiv.id = 'connecting-toast';
+            connectingDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: black;
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 2rem;
+                z-index: 3000;
+            `;
+            connectingDiv.textContent = '正在连接房间...';
+            document.body.appendChild(connectingDiv);
+
+            const conn = peer.connect(hostId, {
+                reliable: true,
+                serialization: 'json'
+            });
+
+            const timeout = setTimeout(() => {
+                document.body.removeChild(connectingDiv);
+                alert('连接超时，请检查房间ID是否正确');
+                peer.destroy();
+            }, 10000);
+
+            conn.on('open', () => {
+                clearTimeout(timeout);
+                document.body.removeChild(connectingDiv);
+                
+                // 发送认证信息，带上玩家名
+                conn.send({ 
+                    type: 'auth', 
+                    password: password,
+                    playerName: playerName 
+                });
+                
+                gameState.multiplayer.connections = [conn];
+                gameState.multiplayer.peer = peer;
+                setupConnection(conn);
+                
+                // 等待认证结果
+                conn.once('data', (data) => {
+                    if (data.type === 'auth_success') {
+                        startMultiplayerGame();
+                    } else if (data.type === 'auth_fail') {
+                        alert('密码错误');
+                        peer.destroy();
+                        showStartScreen();
+                    }
+                });
+            });
+
+            conn.on('error', (err) => {
+                clearTimeout(timeout);
+                document.body.removeChild(connectingDiv);
+                alert('连接失败：' + err.message);
+                peer.destroy();
+            });
+        });
+
+        peer.on('error', (err) => {
+            alert('无法创建连接，请检查网络');
+            console.error('Peer error:', err);
+            showStartScreen();
+        });
+    });
+}
+
+            function setupConnection(conn) {
+                conn.on('data', (data) => {
+                    if (data.type === 'chat') {
+                        addChatMessage(data.sender, data.msg);
+                        if (gameState.multiplayer.isHost) {
+                            gameState.multiplayer.connections.forEach(c => {
+                                if (c !== conn) c.send(data);
+                            });
+                        }
+                    } else if (data.type === 'auth' && gameState.multiplayer.isHost) {
+                        if (data.password === gameState.multiplayer.password) {
+                            conn.send({ type: 'auth_success' });
+                        } else {
+                            conn.send({ type: 'auth_fail' });
+                            conn.close();
+                        }
+                    }
+                });
+
+                conn.on('close', () => {
+                    // 从connections中移除
+                    const index = gameState.multiplayer.connections.indexOf(conn);
+                    if (index > -1) gameState.multiplayer.connections.splice(index, 1);
+                    // 如果是公开房间房主，更新人数
+                    if (gameState.multiplayer.isHost && !gameState.multiplayer.isPrivate) {
+                        const room = gameState.multiplayer.publicRooms[gameState.multiplayer.roomId];
+                        if (room) {
+                            room.playerCount = gameState.multiplayer.connections.length + 1;
+                            updatePublicServerList();
+                        }
+                    }
+                });
+            }
+
+            function addChatMessage(sender, msg) {
+    const div = document.createElement('div');
+    div.innerHTML = `<b>${escapeHtml(sender)}:</b> ${escapeHtml(msg)}`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // 如果已经有定时器，先清除
+    if (window.clearChatTimer) {
+        clearTimeout(window.clearChatTimer);
+    }
+    
+    // 设置新定时器，20秒后清空对话框
+    window.clearChatTimer = setTimeout(() => {
+        chatMessages.innerHTML = '';
+        // 可以加一条系统消息提示（可选）
+        // const sysMsg = document.createElement('div');
+        // sysMsg.innerHTML = '<i>--- 对话已清空 ---</i>';
+        // chatMessages.appendChild(sysMsg);
+    }, 20000); // 20000毫秒 = 20秒
+}
+
+            // ---------- 事件绑定 ----------
+            document.getElementById('singleplayer-btn').addEventListener('click', () => {
+                startScreen.style.display = 'none';
+                singlePanel.style.display = 'block';
+                loadSaveList();
+            });
+
+            document.getElementById('multiplayer-btn').addEventListener('click', () => {
+                startScreen.style.display = 'none';
+                multiPanel.style.display = 'block';
+                updatePublicServerList();
+            });
+// 定期清理可能失效的房间（比如崩溃没来得及删除的）
+setInterval(() => {
+    // 这个函数只在房主自己这里运行，所以不需要清理别人的房间
+    // 但我们可以检查一下自己的房间是否还在
+}, 30000); // 30秒一次
+            document.getElementById('back-from-single').addEventListener('click', showStartScreen);
+            document.getElementById('back-from-multi').addEventListener('click', showStartScreen);
+
+            document.getElementById('start-new-game').addEventListener('click', () => {
+                const name = newGameNameInput.value.trim();
+                if (!name) { alert('请输入游戏名称'); return; }
+                const saves = getSaves();
+                if (saves.some(s => s.name === name)) { alert('名称已存在'); return; }
+                gameState.currentSaveName = name;
+                gameState.currentLevelIndex = 0;
+                saveGame(name, 0);
+                startSingleGame();
+            });
+
+            privatePlus.addEventListener('click', () => {
+                privateOptions.style.display = privateOptions.style.display === 'flex' ? 'none' : 'flex';
+            });
+
+            createPrivateBtn.addEventListener('click', () => {
+                privateOptions.style.display = 'none';
+                createPrivateModal.style.display = 'flex';
+            });
+
+            joinPrivateBtn.addEventListener('click', () => {
+                privateOptions.style.display = 'none';
+                joinPrivateModal.style.display = 'flex';
+            });
+
+            confirmCreatePrivate.addEventListener('click', () => {
+                const name = privateRoomName.value.trim();
+                const pwd = privatePassword.value.trim();
+                if (!name || !pwd) { alert('请填写完整'); return; }
+                createPrivateModal.style.display = 'none';
+                privateRoomName.value = '';
+                privatePassword.value = '';
+                createPrivateRoom(name, pwd);
+            });
+
+            cancelCreatePrivate.addEventListener('click', () => {
+                createPrivateModal.style.display = 'none';
+            });
+
+            confirmJoinPrivate.addEventListener('click', () => {
+                const pwd = joinPassword.value.trim();
+                if (!pwd) { alert('请输入密码'); return; }
+                joinPrivateModal.style.display = 'none';
+                joinPassword.value = '';
+                joinPrivateRoom(pwd);
+            });
+
+            cancelJoinPrivate.addEventListener('click', () => {
+                joinPrivateModal.style.display = 'none';
+            });
+
+            createPublicBtn.addEventListener('click', () => {
+                createPublicModal.style.display = 'flex';
+            });
+
+            confirmCreatePublic.addEventListener('click', () => {
+                const name = publicRoomName.value.trim();
+                if (!name) { alert('请输入房间名称'); return; }
+                createPublicModal.style.display = 'none';
+                publicRoomName.value = '';
+                createPublicRoom(name);
+            });
+
+            cancelCreatePublic.addEventListener('click', () => {
+                createPublicModal.style.display = 'none';
+            });
+
+            chatSend.addEventListener('click', () => {
+                const msg = chatInput.value.trim();
+                if (!msg) return;
+                const sender = gameState.multiplayer.playerName || '玩家';
+                addChatMessage(sender, msg);
+                const data = { type: 'chat', sender, msg };
+                gameState.multiplayer.connections.forEach(conn => conn.send(data));
+                chatInput.value = '';
+            });
+
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') chatSend.click();
+            });
+
+            
+
+            // 窗口关闭清理
+            window.addEventListener('beforeunload', () => {
+    // 如果是房主，从公开列表中删除房间
+    if (gameState.multiplayer.isHost && !gameState.multiplayer.isPrivate) {
+        const roomId = gameState.multiplayer.roomId;
+        if (roomId && gameState.multiplayer.publicRooms[roomId]) {
+            delete gameState.multiplayer.publicRooms[roomId];
+            // 如果有其他玩家，通知他们房主已离开
+            gameState.multiplayer.connections.forEach(conn => {
+                conn.send({ type: 'system', msg: '房主已离开，房间即将关闭' });
+                setTimeout(() => conn.close(), 1000);
+            });
+        }
+    }
+    
+    if (gameState.multiplayer.peer) {
+        gameState.multiplayer.peer.destroy();
+    }
+});
+            // 初始化
+            showStartScreen();
+        })();
+    </script>
+</body>
+</html>

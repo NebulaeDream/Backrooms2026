@@ -1,0 +1,1826 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Level fun · 地狱级迷宫</title>
+    <style>
+        /* ==================== UI 完全照搬 Level0 的样式和位置 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: #ffaa00;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #ffaa00;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        /* 物品栏 - 8格 */
+        #inventory {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            background: rgba(10, 10, 10, 0.85);
+            padding: 6px;
+            border-radius: 14px;
+            border: 2px solid #ffaa00;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .inventory-slot {
+            width: 42px;
+            height: 42px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 2px solid #8a5a3a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #ffd966;
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+        }
+        
+        .inventory-slot.has-item {
+            border-color: #76ff03;
+        }
+        
+        .inventory-slot.active {
+            border-color: #FFD700;
+            box-shadow: 0 0 12px gold;
+            transform: scale(1.05);
+        }
+        
+        /* 方向控制 */
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #ffaa00;
+            border-radius: 16px;
+            color: #ffd966;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .control-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #ffaa00;
+            color: #1a1a1a;
+        }
+        
+        #jumpBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 120px;
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #ffaa00;
+            border-radius: 16px;
+            color: #ffd966;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #jumpBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #ffaa00;
+            color: #1a1a1a;
+        }
+        
+        /* 趴下按钮 */
+        #crouchBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 200px;
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #00aaff;
+            border-radius: 16px;
+            color: #aaddff;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #2b5a5a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #crouchBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2b5a5a;
+            background: #00aaff;
+            color: #1a1a1a;
+        }
+        
+        #crouchBtn.active {
+            background: #00aaff;
+            color: #1a1a1a;
+            border-color: #ffffff;
+        }
+        
+        #interactBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 170, 0, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 38px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #interactBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a4e2b;
+            background: #ffd966;
+        }
+        
+        #useBtn {
+            position: fixed;
+            top: 110px;
+            right: 15px;
+            width: 55px;
+            height: 55px;
+            background: rgba(76, 175, 80, 0.95);
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #2a5a2a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #useBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2a5a2a;
+        }
+        
+        #dropBtn {
+            position: fixed;
+            top: 110px;
+            right: 80px;
+            width: 55px;
+            height: 55px;
+            background: #ff4444;
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #aa2222;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #dropBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa2222;
+        }
+        
+        #flashlightToggleBtn {
+            position: fixed;
+            bottom: 100px;
+            right: 35px;
+            width: 55px;
+            height: 55px;
+            background: rgba(255, 215, 0, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 26px;
+            color: #1a1a1a;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .flashlight-on { background: rgba(255, 215, 0, 0.95); }
+        .flashlight-off { background: rgba(80, 80, 80, 0.95); color: #ccc; }
+        
+        .touch-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 500;
+            background: transparent;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        
+        .status-display {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            background: rgba(10, 10, 10, 0.85);
+            color: #ffd966;
+            padding: 10px 15px;
+            border-radius: 14px;
+            border: 2px solid #ffaa00;
+            font-size: 14px;
+            z-index: 2000;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            min-width: 200px;
+        }
+        
+        .status-display div {
+            margin-bottom: 5px;
+        }
+        
+        .sanity-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(50, 50, 50, 0.8);
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+            border: 1px solid #8a7a3a;
+        }
+        
+        .sanity-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00c8ff, #00ffaa);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        #interactionHint {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: #ffd966;
+            padding: 10px 22px;
+            border-radius: 40px;
+            display: none;
+            font-size: 17px;
+            font-weight: bold;
+            border: 2px solid #ffaa00;
+            z-index: 2000;
+            pointer-events: none;
+        }
+        
+        #settingsBtn {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #ffaa00;
+            border-radius: 12px;
+            color: #ffd966;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton {
+            position: fixed;
+            top: 70px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: #ffaa00;
+            border: 3px solid white;
+            border-radius: 12px;
+            color: black;
+            font-size: 22px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3001;
+            box-shadow: 0 4px 0 #aa7700;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa7700;
+        }
+        
+        #devConsole {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.98);
+            border: 3px solid #ffaa00;
+            border-radius: 18px;
+            padding: 25px;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 0 35px rgba(255,170,0,0.5);
+            pointer-events: auto;
+            width: 75%;
+            max-width: 350px;
+        }
+        
+        #devConsole input {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            background: #333;
+            border: 2px solid #ffaa00;
+            border-radius: 10px;
+            color: white;
+            outline: none;
+        }
+        
+        #devConsole button {
+            background: #ffaa00;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 17px;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            border-bottom: 4px solid #aa7700;
+        }
+        
+        #devConsole button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        #settingsPanel {
+            position: fixed;
+            top: 75px;
+            right: 12px;
+            width: 220px;
+            background: rgba(10, 10, 10, 0.98);
+            border: 3px solid #ffaa00;
+            border-radius: 16px;
+            padding: 18px;
+            color: #ffd966;
+            z-index: 3500;
+            pointer-events: auto;
+            display: none;
+            backdrop-filter: blur(8px);
+        }
+        
+        .quality-option {
+            background: rgba(40, 40, 40, 0.9);
+            border: 2px solid #8a7a3a;
+            border-radius: 30px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .quality-option.active {
+            background: #ffaa00;
+            color: #1a1a1a;
+        }
+        
+        .close-btn {
+            width: 100%;
+            padding: 10px;
+            background: #5a4e2b;
+            border: none;
+            border-radius: 30px;
+            color: #ffd966;
+            font-size: 15px;
+            margin-top: 12px;
+            cursor: pointer;
+            border-bottom: 3px solid #3a351a;
+        }
+        
+        .close-btn:active {
+            transform: translateY(2px);
+            border-bottom: none;
+        }
+        
+        #winMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 35px;
+            border-radius: 26px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #ffffff;
+            color: #ffffff;
+            pointer-events: auto;
+        }
+        
+        #winMessage button {
+            margin-top: 22px;
+            padding: 12px 35px;
+            background: #ffaa00;
+            border: none;
+            border-radius: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a1a;
+            border-bottom: 4px solid #5a4e2b;
+            cursor: pointer;
+        }
+        
+        #winMessage button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        #deathOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0044aa;
+            display: none;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        /* 钥匙状态指示 */
+        #keyStatus {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .key-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #888;
+        }
+        
+        .key-red { background: #ff0000; }
+        .key-blue { background: #0000ff; }
+        .key-green { background: #00ff00; }
+        .key-yellow { background: #ffff00; }
+        
+        .key-red.active { border-color: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        .key-blue.active { border-color: #0000ff; box-shadow: 0 0 10px #0000ff; }
+        .key-green.active { border-color: #00ff00; box-shadow: 0 0 10px #00ff00; }
+        .key-yellow.active { border-color: #ffff00; box-shadow: 0 0 10px #ffff00; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <div id="inventory">
+            <div class="inventory-slot" id="slot1"></div>
+            <div class="inventory-slot" id="slot2"></div>
+            <div class="inventory-slot" id="slot3"></div>
+            <div class="inventory-slot" id="slot4"></div>
+            <div class="inventory-slot" id="slot5"></div>
+            <div class="inventory-slot" id="slot6"></div>
+            <div class="inventory-slot" id="slot7"></div>
+            <div class="inventory-slot" id="slot8"></div>
+        </div>
+        
+        <div id="controls">
+            <div class="control-group"><button class="control-btn" id="forwardBtn">▲</button></div>
+            <div class="control-group">
+                <button class="control-btn" id="leftBtn">◀</button>
+                <button class="control-btn" id="backwardBtn">▼</button>
+                <button class="control-btn" id="rightBtn">▶</button>
+            </div>
+        </div>
+        
+        <button id="jumpBtn">⬆️</button>
+        <button id="crouchBtn">⬇️</button>
+        <button id="interactBtn">✋</button>
+        <button id="useBtn">使用</button>
+        <button id="dropBtn">🗑️</button>
+        <button id="flashlightToggleBtn">🔦</button>
+        <button id="settingsBtn">⚙️</button>
+        <button id="devTButton">T</button>
+        
+        <div id="settingsPanel">
+            <div style="font-size:18px; font-weight:bold; margin-bottom:15px; text-align:center;">⚙️ 画质</div>
+            <div id="qualityLow" class="quality-option"><span>📱 低质</span><span>性能优先</span></div>
+            <div id="qualityMid" class="quality-option"><span>📲 中等</span><span>平衡</span></div>
+            <div id="qualityHigh" class="quality-option active"><span>💻 高质</span><span>视觉最佳</span></div>
+            <button class="close-btn" id="closeSettingsBtn">关闭</button>
+        </div>
+        
+        <div id="devConsole">
+            <div style="color:#ffaa00; font-size:22px; font-weight:bold;">⚡ 开发者</div>
+            <input type="text" id="devInput" placeholder="give almond / give flashlight / keys">
+            <button id="closeDevBtn">关闭</button>
+        </div>
+        
+        <div id="interactionHint">🔍 点击手掌交互</div>
+        
+        <div class="status-display">
+            <div>💧 杏仁水: <span id="almondCount">0</span></div>
+            <div>🔦 手电筒: <span id="flashlightOwned">无</span></div>
+            <div>🧠 理智: <span id="sanityPercent">100%</span></div>
+            <div class="sanity-bar"><div id="sanityFill" class="sanity-fill" style="width:100%"></div></div>
+            <div style="margin-top:8px;">🔑 收集的钥匙:</div>
+            <div id="keyStatus">
+                <div class="key-indicator key-red" id="keyRed"></div>
+                <div class="key-indicator key-blue" id="keyBlue"></div>
+                <div class="key-indicator key-green" id="keyGreen"></div>
+                <div class="key-indicator key-yellow" id="keyYellow"></div>
+            </div>
+            <div style="margin-top:5px;">🚪 白色门: <span id="whiteDoorStatus">🔒</span></div>
+            <div>👾 <span id="monsterStatus">派对客游荡</span></div>
+            <div>⬇️ <span id="crouchStatus">站立</span></div>
+            <div>🎮 <span id="qualityStatus">高质</span></div>
+        </div>
+    </div>
+    
+    <div id="deathOverlay"></div>
+    
+    
+    
+    <div class="touch-area" id="touchArea"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        (function() {
+            "use strict";
+
+            // ==================== 游戏状态 ====================
+            const gameState = {
+                player: { x: 0, y: 1.6, z: 0 },
+                rotationY: 0,
+                items: { 
+                    almondWater: 0,
+                    painSoda: 0
+                },
+                keys: {
+                    red: false,
+                    blue: false,
+                    green: false,
+                    yellow: false
+                },
+                flashlightOn: false,
+                hasFlashlight: false,
+                isCrouching: false,
+                targetHeight: 1.6,
+                isAlive: true,
+                activeSlot: -1,
+                flashlightSlotIndex: -1,
+                quality: 'high',
+                sanity: 100,
+                sanityDrainRate: 0.03,
+                isJumping: false,
+                jumpVelocity: 0,
+                onGround: true,
+                isCaught: false,
+                catchStartTime: 0,
+                
+                // 派对客
+                partygoers: [],
+                
+                // 物品列表
+                itemsList: [],
+                
+                // 门列表
+                doorList: [],
+                
+                // 墙壁列表（用于碰撞检测）
+                walls: []
+            };
+
+            // ==================== Three.js 初始化 ====================
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffaa00); // 明亮橙色
+            
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(0, 1.8, 5);
+            
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = false; // 关阴影防黑屏
+            renderer.setClearColor(0xffaa00);
+
+            // ==================== 灯光系统 ====================
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+            
+            const fillLight = new THREE.DirectionalLight(0xffdd99, 0.5);
+            fillLight.position.set(-5, 5, -5);
+            scene.add(fillLight);
+
+            // 手电筒
+            const flashlight = new THREE.SpotLight(0xfff0b0, 2.0);
+            flashlight.angle = 0.4;
+            flashlight.penumbra = 0.3;
+            flashlight.distance = 50;
+            scene.add(flashlight);
+            flashlight.visible = false;
+            
+            const flashlightTarget = new THREE.Object3D();
+            flashlight.target = flashlightTarget;
+            scene.add(flashlightTarget);
+
+            // ==================== 玩家身体 ====================
+            const playerBody = new THREE.Group();
+            
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0xffaa33 });
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.4), torsoMat);
+            torso.position.y = 0.7;
+            playerBody.add(torso);
+            
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xff9933 });
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.4), headMat);
+            head.position.y = 1.5;
+            playerBody.add(head);
+            
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const mask = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), maskMat);
+            mask.position.set(0, 1.5, 0.25);
+            playerBody.add(mask);
+            
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftArm.position.set(-0.6, 1.0, 0);
+            playerBody.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightArm.position.set(0.6, 1.0, 0);
+            playerBody.add(rightArm);
+            
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftLeg.position.set(-0.25, -0.3, 0);
+            playerBody.add(leftLeg);
+            
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightLeg.position.set(0.25, -0.3, 0);
+            playerBody.add(rightLeg);
+            
+            playerBody.position.set(0, 0, 0);
+            scene.add(playerBody);
+
+            // ==================== 手持物品模型 ====================
+            const heldItemContainer = new THREE.Group();
+            
+            function createHeldItemModel(type, color) {
+                while(heldItemContainer.children.length > 0) {
+                    heldItemContainer.remove(heldItemContainer.children[0]);
+                }
+                
+                if (!type) return;
+                
+                let model;
+                if (type === '🧪') {
+                    model = new THREE.Group();
+                    const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8), canMat);
+                    body.position.y = 0.4;
+                    model.add(body);
+                    
+                    const topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6), topMat);
+                    top.position.y = 0.85;
+                    model.add(top);
+                }
+                else if (type === '🔴') {
+                    model = new THREE.Group();
+                    const canMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8), canMat);
+                    body.position.y = 0.4;
+                    model.add(body);
+                    
+                    const topMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6), topMat);
+                    top.position.y = 0.85;
+                    model.add(top);
+                }
+                else if (type === '🔦') {
+                    model = new THREE.Group();
+                    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8), bodyMat);
+                    body.rotation.x = Math.PI / 2;
+                    body.position.set(0, 0, 0);
+                    model.add(body);
+                    
+                    const headMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8), headMat);
+                    head.rotation.x = Math.PI / 2;
+                    head.position.set(0, 0, 0.7);
+                    model.add(head);
+                }
+                else if (type === '🔑') {
+                    let keyColor = 0xff0000;
+                    if (color === 'blue') keyColor = 0x0000ff;
+                    else if (color === 'green') keyColor = 0x00ff00;
+                    else if (color === 'yellow') keyColor = 0xffff00;
+                    
+                    model = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.1, 0.1),
+                        new THREE.MeshStandardMaterial({ color: keyColor })
+                    );
+                }
+                
+                if (model) {
+                    model.scale.set(0.4, 0.4, 0.4);
+                    model.rotation.set(0.2, 0.5, 0.1);
+                    heldItemContainer.add(model);
+                }
+            }
+            
+            heldItemContainer.position.set(0.6, -0.4, -0.8);
+            camera.add(heldItemContainer);
+            scene.add(camera);
+
+            // ==================== 画质设置 ====================
+            function applyQualitySettings(quality) {
+                gameState.quality = quality;
+                document.getElementById('qualityStatus').textContent = 
+                    quality === 'low' ? '低质' : quality === 'mid' ? '中等' : '高质';
+                
+                document.querySelectorAll('.quality-option').forEach(el => el.classList.remove('active'));
+                if(quality === 'low') document.getElementById('qualityLow').classList.add('active');
+                if(quality === 'mid') document.getElementById('qualityMid').classList.add('active');
+                if(quality === 'high') document.getElementById('qualityHigh').classList.add('active');
+                
+                if (quality === 'low') {
+                    ambientLight.intensity = 1.2;
+                    renderer.setPixelRatio(1);
+                } else if (quality === 'mid') {
+                    ambientLight.intensity = 1.0;
+                    renderer.setPixelRatio(1.5);
+                } else {
+                    ambientLight.intensity = 0.9;
+                    renderer.setPixelRatio(window.devicePixelRatio);
+                }
+            }
+
+            // ==================== 创建地狱级迷宫 ====================
+            function createMaze() {
+                // 彩色地板 - 红绿棋盘格
+                for (let x = -200; x <= 200; x += 5) {
+                    for (let z = -200; z <= 200; z += 5) {
+                        const color = (Math.floor(x/5) + Math.floor(z/5)) % 2 === 0 ? 0xff0000 : 0x00ff00;
+                        const tileMat = new THREE.MeshStandardMaterial({ color: color });
+                        const tile = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.1, 4.8), tileMat);
+                        tile.position.set(x, 0, z);
+                        scene.add(tile);
+                    }
+                }
+
+                // 黑色天花板
+                const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+                const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), ceilingMat);
+                ceiling.rotation.x = Math.PI / 2;
+                ceiling.position.y = 6;
+                scene.add(ceiling);
+
+                // 边界墙
+                const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xff5500 }); // 橙色
+                const boundaries = [
+                    { x: 0, z: -210, w: 420, d: 2 },
+                    { x: 0, z: 210, w: 420, d: 2 },
+                    { x: -210, z: 0, w: 2, d: 420 },
+                    { x: 210, z: 0, w: 2, d: 420 }
+                ];
+                boundaries.forEach(b => {
+                    const wall = new THREE.Mesh(new THREE.BoxGeometry(b.w, 6, b.d), wallMaterial);
+                    wall.position.set(b.x, 3, b.z);
+                    scene.add(wall);
+                });
+
+                // 生成真正的迷宫 - 使用递归分割算法
+                const mazeSize = 180;
+                const cellSize = 6;
+                const cols = Math.floor(mazeSize * 2 / cellSize);
+                const rows = Math.floor(mazeSize * 2 / cellSize);
+                
+                // 初始化迷宫网格 (true = 墙, false = 路)
+                let maze = Array(rows).fill().map(() => Array(cols).fill(true));
+                
+                // 递归回溯生成迷宫
+                function carve(x, z) {
+                    const dirs = [
+                        [0, 2], [2, 0], [0, -2], [-2, 0]
+                    ].sort(() => Math.random() - 0.5);
+                    
+                    for (let [dx, dz] of dirs) {
+                        const nx = x + dx;
+                        const nz = z + dz;
+                        
+                        if (nx >= 0 && nx < cols && nz >= 0 && nz < rows && maze[nz][nx]) {
+                            maze[z + dz/2][x + dx/2] = false;
+                            maze[nz][nx] = false;
+                            carve(nx, nz);
+                        }
+                    }
+                }
+                
+                // 从(1,1)开始挖
+                maze[1][1] = false;
+                carve(1, 1);
+                
+                // 确保出口区域有路
+                const exitX = Math.floor(cols * 0.8);
+                const exitZ = Math.floor(rows * 0.8);
+                maze[exitZ][exitX] = false;
+                
+                // 创建墙壁
+                for (let z = 0; z < rows; z++) {
+                    for (let x = 0; x < cols; x++) {
+                        if (maze[z][x]) {
+                            const worldX = (x - cols/2) * cellSize;
+                            const worldZ = (z - rows/2) * cellSize;
+                            
+                            // 随机决定是横墙还是竖墙，或者两者都有
+                            if (Math.random() < 0.5) {
+                                const wall = new THREE.Mesh(new THREE.BoxGeometry(cellSize-0.2, 6, 1), wallMaterial);
+                                wall.position.set(worldX, 3, worldZ);
+                                scene.add(wall);
+                                gameState.walls.push({ x: worldX, z: worldZ, w: cellSize-0.2, d: 1 });
+                            } else {
+                                const wall = new THREE.Mesh(new THREE.BoxGeometry(1, 6, cellSize-0.2), wallMaterial);
+                                wall.position.set(worldX, 3, worldZ);
+                                scene.add(wall);
+                                gameState.walls.push({ x: worldX, z: worldZ, w: 1, d: cellSize-0.2 });
+                            }
+                        }
+                    }
+                }
+                
+                // 添加一些额外的随机墙壁增加复杂度
+                for (let i = 0; i < 200; i++) {
+                    const x = (Math.random() - 0.5) * 350;
+                    const z = (Math.random() - 0.5) * 350;
+                    if (Math.abs(x) < 190 && Math.abs(z) < 190) {
+                        const wall = new THREE.Mesh(new THREE.BoxGeometry(4, 6, 4), wallMaterial);
+                        wall.position.set(x, 3, z);
+                        scene.add(wall);
+                        gameState.walls.push({ x: x, z: z, w: 4, d: 4 });
+                    }
+                }
+                
+                // 返回出口位置
+                return {
+                    x: (exitX - cols/2) * cellSize,
+                    z: (exitZ - rows/2) * cellSize
+                };
+            }
+
+            // 创建白色桌子
+            function createTable(x, z) {
+                const group = new THREE.Group();
+                const tableMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                const top = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 3), tableMat);
+                top.position.y = 1;
+                group.add(top);
+                
+                const legMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                const positions = [[-1.5, 0.5, -1], [1.5, 0.5, -1], [-1.5, 0.5, 1], [1.5, 0.5, 1]];
+                positions.forEach(pos => {
+                    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1, 0.4), legMat);
+                    leg.position.set(pos[0], pos[1], pos[2]);
+                    group.add(leg);
+                });
+                
+                group.position.set(x, 0, z);
+                group.userData = { type: 'table' };
+                scene.add(group);
+            }
+
+            function createTables() {
+                for (let i = 0; i < 80; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 350;
+                        z = (Math.random() - 0.5) * 350;
+                    } while (Math.abs(x) < 20 && Math.abs(z) < 20);
+                    createTable(x, z);
+                }
+            }
+
+            // 创建彩色门
+            function createDoors() {
+                const doorColors = { red:0xff0000, blue:0x0000ff, green:0x00ff00, yellow:0xffff00 };
+                const positions = [
+                    { color:'red', pos:[-120, -120] },
+                    { color:'blue', pos:[120, -120] },
+                    { color:'green', pos:[-120, 120] },
+                    { color:'yellow', pos:[120, 120] }
+                ];
+                positions.forEach(p => {
+                    const group = new THREE.Group();
+                    const frameMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                    const frame = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 1), frameMat);
+                    frame.position.y = 2.5;
+                    group.add(frame);
+                    
+                    const doorMat = new THREE.MeshStandardMaterial({ color: doorColors[p.color] });
+                    const door = new THREE.Mesh(new THREE.BoxGeometry(3, 4, 0.3), doorMat);
+                    door.position.set(0, 2.5, 0.4);
+                    door.userData = { type: 'colorDoor', color: p.color };
+                    group.add(door);
+                    
+                    group.position.set(p.pos[0], 0, p.pos[1]);
+                    group.userData = { type: 'doorGroup', color: p.color };
+                    scene.add(group);
+                    gameState.doorList.push(group);
+                });
+            }
+
+            // 创建白色门（出口）
+            function createWhiteDoor(exitPos) {
+                const group = new THREE.Group();
+                const frameMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                const frame = new THREE.Mesh(new THREE.BoxGeometry(4, 5, 1), frameMat);
+                frame.position.y = 2.5;
+                group.add(frame);
+                
+                const doorMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x222222 });
+                const door = new THREE.Mesh(new THREE.BoxGeometry(3, 4, 0.3), doorMat);
+                door.position.set(0, 2.5, 0.4);
+                door.userData = { type: 'whiteDoor' };
+                group.add(door);
+                
+                group.position.set(exitPos.x, 0, exitPos.z);
+                group.userData = { type: 'whiteDoorGroup' };
+                scene.add(group);
+                gameState.doorList.push(group);
+            }
+
+            // 物品创建函数
+            function createAlmondWater(x, z, y = 0.4) {
+                const group = new THREE.Group();
+                const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.28, 0.8, 8), canMat);
+                body.position.y = 0.4;
+                group.add(body);
+                const topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 6), topMat);
+                top.position.y = 0.85;
+                group.add(top);
+                group.position.set(x, y, z);
+                group.userData = { type: 'almond' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createPainSoda(x, z, y = 0.4) {
+                const group = new THREE.Group();
+                const canMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.28, 0.8, 8), canMat);
+                body.position.y = 0.4;
+                group.add(body);
+                const topMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 6), topMat);
+                top.position.y = 0.85;
+                group.add(top);
+                group.position.set(x, y, z);
+                group.userData = { type: 'pain' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createFlashlightItem(x, z, y = 0.5) {
+                const group = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 1.0, 8), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+                body.rotation.x = Math.PI/2;
+                body.position.set(0,0.2,0);
+                group.add(body);
+                const head = new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.3,8), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+                head.rotation.x = Math.PI/2;
+                head.position.set(0,0.2,0.6);
+                group.add(head);
+                group.position.set(x, y, z);
+                group.userData = { type: 'flashlight' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createKey(x, z, y = 0.5, color) {
+                const colorMap = { red:0xff0000, blue:0x0000ff, green:0x00ff00, yellow:0xffff00 };
+                const key = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.6, 0.15, 0.25),
+                    new THREE.MeshStandardMaterial({ color: colorMap[color] })
+                );
+                key.position.set(x, y, z);
+                key.userData = { type: 'key', keyColor: colorMap[color] };
+                scene.add(key);
+                gameState.itemsList.push(key);
+            }
+
+            // 创建派对客
+            function createPartygoer(x, z) {
+                const group = new THREE.Group();
+                
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.0, 0.8), bodyMat);
+                body.position.y = 1.0;
+                group.add(body);
+                
+                const headMat = new THREE.MeshStandardMaterial({ color: 0xffaa00 });
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.8, 8), headMat);
+                head.position.y = 2.2;
+                group.add(head);
+                
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+                const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.15, 6), eyeMat);
+                eye1.position.set(-0.3, 2.4, 0.7);
+                group.add(eye1);
+                const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.15, 6), eyeMat);
+                eye2.position.set(0.3, 2.4, 0.7);
+                group.add(eye2);
+                
+                const smileMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                for (let j = 0; j < 5; j++) {
+                    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), smileMat);
+                    mouth.position.set(-0.2 + j*0.1, 2.0, 0.7);
+                    group.add(mouth);
+                }
+                
+                for (let j = 0; j < 3; j++) {
+                    const balloonMat = new THREE.MeshStandardMaterial({ color: [0xff0000,0x00ff00,0x0000ff][j] });
+                    const balloon = new THREE.Mesh(new THREE.SphereGeometry(0.4,6), balloonMat);
+                    balloon.position.set(0.8 + j*0.3, 2.5, 0.5);
+                    group.add(balloon);
+                    const stringMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+                    const string = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,1.0,4), stringMat);
+                    string.position.set(0.8 + j*0.3, 1.8, 0.5);
+                    group.add(string);
+                }
+                
+                group.position.set(x, 0.5, z);
+                group.userData = {
+                    speed: 0.15,
+                    isChasing: false,
+                    walkDir: Math.random() * Math.PI * 2
+                };
+                
+                scene.add(group);
+                gameState.partygoers.push(group);
+            }
+
+            function createPartygoers() {
+                // 放在远处，确保出生点安全
+                for (let i = 0; i < 20; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 300;
+                        z = (Math.random() - 0.5) * 300;
+                    } while (Math.abs(x) < 50 && Math.abs(z) < 50);
+                    createPartygoer(x, z);
+                }
+            }
+
+            function createItems() {
+                for (let i = 0; i < 60; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 350;
+                        z = (Math.random() - 0.5) * 350;
+                    } while (Math.abs(x) < 20 && Math.abs(z) < 20);
+                    
+                    const r = Math.random();
+                    if (r < 0.3) createAlmondWater(x, z);
+                    else if (r < 0.5) createPainSoda(x, z);
+                    else if (r < 0.7) createFlashlightItem(x, z);
+                    else {
+                        const colors = ['red','blue','green','yellow'];
+                        const col = colors[Math.floor(Math.random()*colors.length)];
+                        createKey(x, z, 0.5, col);
+                    }
+                }
+            }
+
+           function checkCollision(newX, newZ) {
+    const r = 0.6; // 碰撞半径
+    
+    // 边界检测
+    if (Math.abs(newX) > 190 || Math.abs(newZ) > 190) return true;
+    
+    // 只检测附近的墙壁（优化性能）
+    const nearbyWalls = gameState.walls.filter(w => 
+        Math.abs(w.x - newX) < 8 && Math.abs(w.z - newZ) < 8
+    );
+    
+    for (let w of nearbyWalls) {
+        const left = w.x - w.w/2 - r;
+        const right = w.x + w.w/2 + r;
+        const top = w.z - w.d/2 - r;
+        const bottom = w.z + w.d/2 + r;
+        
+        if (newX > left && newX < right && newZ > top && newZ < bottom) {
+            return true;
+        }
+    }
+    return false;
+}
+
+            // ==================== 更新手持物品 ====================
+            function updateHeldItem() {
+                if (gameState.activeSlot === -1) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                
+                const slot = document.getElementById('slot'+(gameState.activeSlot+1));
+                if (!slot || !slot.classList.contains('has-item')) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                
+                const itemType = slot.textContent;
+                if (itemType === '🔑') {
+                    let keyColor = 'red';
+                    if (gameState.keys.blue) keyColor = 'blue';
+                    else if (gameState.keys.green) keyColor = 'green';
+                    else if (gameState.keys.yellow) keyColor = 'yellow';
+                    createHeldItemModel('🔑', keyColor);
+                } else {
+                    createHeldItemModel(itemType);
+                }
+            }
+
+            // ==================== UI更新 ====================
+            function updateUI() {
+                document.getElementById('almondCount').textContent = gameState.items.almondWater;
+                document.getElementById('flashlightOwned').textContent = gameState.hasFlashlight ? '🔦有' : '无';
+                document.getElementById('sanityPercent').textContent = Math.floor(gameState.sanity) + '%';
+                document.getElementById('sanityFill').style.width = gameState.sanity + '%';
+                
+                document.getElementById('keyRed').className = 'key-indicator key-red' + (gameState.keys.red ? ' active' : '');
+                document.getElementById('keyBlue').className = 'key-indicator key-blue' + (gameState.keys.blue ? ' active' : '');
+                document.getElementById('keyGreen').className = 'key-indicator key-green' + (gameState.keys.green ? ' active' : '');
+                document.getElementById('keyYellow').className = 'key-indicator key-yellow' + (gameState.keys.yellow ? ' active' : '');
+                
+                const allKeys = gameState.keys.red && gameState.keys.blue && gameState.keys.green && gameState.keys.yellow;
+                document.getElementById('whiteDoorStatus').textContent = allKeys ? '🔓' : '🔒';
+                
+                document.getElementById('crouchStatus').textContent = gameState.isCrouching ? '趴下' : '站立';
+                if (gameState.isCrouching) {
+                    document.getElementById('crouchBtn').classList.add('active');
+                } else {
+                    document.getElementById('crouchBtn').classList.remove('active');
+                }
+                
+                for(let i=1;i<=8;i++) {
+                    const slot = document.getElementById('slot'+i);
+                    slot.textContent = '';
+                    slot.classList.remove('has-item', 'active');
+                }
+                let idx = 0;
+                for(let i=0; i<gameState.items.almondWater; i++) {
+                    if(idx<8) { document.getElementById('slot'+(idx+1)).textContent = '🧪'; document.getElementById('slot'+(idx+1)).classList.add('has-item'); idx++; }
+                }
+                for(let i=0; i<gameState.items.painSoda; i++) {
+                    if(idx<8) { document.getElementById('slot'+(idx+1)).textContent = '🔴'; document.getElementById('slot'+(idx+1)).classList.add('has-item'); idx++; }
+                }
+                if(gameState.hasFlashlight && idx<8) {
+                    document.getElementById('slot'+(idx+1)).textContent = '🔦';
+                    document.getElementById('slot'+(idx+1)).classList.add('has-item');
+                    gameState.flashlightSlotIndex = idx;
+                    idx++;
+                }
+                if(gameState.keys.red && idx<8) { document.getElementById('slot'+(idx+1)).textContent = '🔴'; document.getElementById('slot'+(idx+1)).classList.add('has-item'); idx++; }
+                if(gameState.keys.blue && idx<8) { document.getElementById('slot'+(idx+1)).textContent = '🔵'; document.getElementById('slot'+(idx+1)).classList.add('has-item'); idx++; }
+                if(gameState.keys.green && idx<8) { document.getElementById('slot'+(idx+1)).textContent = '🟢'; document.getElementById('slot'+(idx+1)).classList.add('has-item'); idx++; }
+                if(gameState.keys.yellow && idx<8) { document.getElementById('slot'+(idx+1)).textContent = '🟡'; document.getElementById('slot'+(idx+1)).classList.add('has-item'); idx++; }
+                
+                if(gameState.activeSlot !== -1) {
+                    const active = document.getElementById('slot'+(gameState.activeSlot+1));
+                    if(active) active.classList.add('active');
+                }
+                
+                const fb = document.getElementById('flashlightToggleBtn');
+                if(gameState.activeSlot === gameState.flashlightSlotIndex && gameState.hasFlashlight) {
+                    fb.style.display = 'flex';
+                    fb.innerHTML = gameState.flashlightOn ? '🔦' : '🔦';
+                    fb.className = gameState.flashlightOn ? 'flashlight-on' : 'flashlight-off';
+                } else {
+                    fb.style.display = 'none';
+                }
+                
+                updateHeldItem();
+            }
+
+            // ==================== 跳跃和趴下 ====================
+            function handleJump() {
+                if(gameState.onGround && !gameState.isCaught && !gameState.isCrouching) {
+                    gameState.isJumping = true;
+                    gameState.jumpVelocity = 0.28;
+                    gameState.onGround = false;
+                }
+            }
+
+            function updateJump() {
+                if(gameState.isJumping) {
+                    gameState.player.y += gameState.jumpVelocity;
+                    gameState.jumpVelocity -= 0.016;
+                    if(gameState.player.y <= gameState.targetHeight) {
+                        gameState.player.y = gameState.targetHeight;
+                        gameState.isJumping = false;
+                        gameState.jumpVelocity = 0;
+                        gameState.onGround = true;
+                    }
+                }
+            }
+
+            function handleCrouch() {
+                gameState.isCrouching = !gameState.isCrouching;
+                gameState.targetHeight = gameState.isCrouching ? 0.8 : 1.6;
+            }
+
+            function updateCrouch() {
+                if (Math.abs(gameState.player.y - gameState.targetHeight) > 0.01) {
+                    gameState.player.y += (gameState.targetHeight - gameState.player.y) * 0.1;
+                } else {
+                    gameState.player.y = gameState.targetHeight;
+                }
+            }
+
+            // ==================== 使用物品 ====================
+            function useItem() {
+                if(gameState.isCaught || !gameState.isAlive) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement) return;
+                
+                const itemType = slotElement.textContent;
+                
+                if(itemType === '🧪' && gameState.items.almondWater > 0) {
+                    gameState.items.almondWater--;
+                    gameState.sanity = Math.min(100, gameState.sanity + 40);
+                    if (gameState.items.almondWater === 0) gameState.activeSlot = -1;
+                    updateUI();
+                }
+                
+                if(itemType === '🔴' && gameState.items.painSoda > 0) {
+                    gameState.isAlive = false;
+                    startDeathSequence();
+                }
+            }
+
+            // ==================== 丢弃物品 ====================
+            function dropItem() {
+                if(gameState.isCaught || !gameState.isAlive) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement || !slotElement.classList.contains('has-item')) return;
+                
+                const itemType = slotElement.textContent;
+                const dropX = gameState.player.x;
+                const dropZ = gameState.player.z;
+                
+                if (itemType === '🧪' && gameState.items.almondWater > 0) {
+                    gameState.items.almondWater--;
+                    createAlmondWater(dropX, dropZ, gameState.player.y);
+                }
+                else if (itemType === '🔴' && gameState.items.painSoda > 0) {
+                    gameState.items.painSoda--;
+                    createPainSoda(dropX, dropZ, gameState.player.y);
+                }
+                else if (itemType === '🔦' && gameState.hasFlashlight) {
+                    gameState.hasFlashlight = false;
+                    gameState.flashlightOn = false;
+                    createFlashlightItem(dropX, dropZ, gameState.player.y);
+                }
+                else if (itemType === '🔴' && gameState.keys.red) {
+                    gameState.keys.red = false;
+                    createKey(dropX, dropZ, gameState.player.y, 'red');
+                }
+                else if (itemType === '🔵' && gameState.keys.blue) {
+                    gameState.keys.blue = false;
+                    createKey(dropX, dropZ, gameState.player.y, 'blue');
+                }
+                else if (itemType === '🟢' && gameState.keys.green) {
+                    gameState.keys.green = false;
+                    createKey(dropX, dropZ, gameState.player.y, 'green');
+                }
+                else if (itemType === '🟡' && gameState.keys.yellow) {
+                    gameState.keys.yellow = false;
+                    createKey(dropX, dropZ, gameState.player.y, 'yellow');
+                }
+                
+                gameState.activeSlot = -1;
+                updateUI();
+            }
+
+            // ==================== 交互 ====================
+            function interactHandler() {
+                if(!gameState.isAlive || gameState.isCaught) return;
+                
+                let foundItem = null, foundIdx = -1;
+                gameState.itemsList.forEach((item, index) => {
+                    const dist = Math.sqrt(
+                        (gameState.player.x - item.position.x)**2 + 
+                        (gameState.player.z - item.position.z)**2
+                    );
+                    if (dist < 3) {
+                        foundItem = item;
+                        foundIdx = index;
+                    }
+                });
+                
+                if (foundItem) {
+                    const type = foundItem.userData.type;
+                    if (type === 'almond') {
+                        gameState.items.almondWater++;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    } else if (type === 'pain') {
+                        gameState.items.painSoda++;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    } else if (type === 'flashlight' && !gameState.hasFlashlight) {
+                        gameState.hasFlashlight = true;
+                        gameState.flashlightOn = false;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    } else if (type === 'key') {
+                        const color = foundItem.userData.keyColor;
+                        if (color === 0xff0000) gameState.keys.red = true;
+                        else if (color === 0x0000ff) gameState.keys.blue = true;
+                        else if (color === 0x00ff00) gameState.keys.green = true;
+                        else if (color === 0xffff00) gameState.keys.yellow = true;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    }
+                    return;
+                }
+                
+                for (let i = gameState.doorList.length-1; i>=0; i--) {
+                    const door = gameState.doorList[i];
+                    const dist = Math.sqrt(
+                        (gameState.player.x - door.position.x)**2 + 
+                        (gameState.player.z - door.position.z)**2
+                    );
+                    if (dist < 4) {
+                        if (door.userData.type === 'whiteDoorGroup') {
+                            const allKeys = gameState.keys.red && gameState.keys.blue && gameState.keys.green && gameState.keys.yellow;
+                            if (allKeys) {
+                                document.getElementById('winMessage').style.display = 'block';
+                                parent.postMessage({ type: 'levelComplete' }, '*');
+                                gameState.isAlive = false;
+                            }
+                        } else if (door.userData.color) {
+                            const color = door.userData.color;
+                            if (color === 'red' && gameState.keys.red) {
+                                scene.remove(door); gameState.doorList.splice(i,1);
+                            } else if (color === 'blue' && gameState.keys.blue) {
+                                scene.remove(door); gameState.doorList.splice(i,1);
+                            } else if (color === 'green' && gameState.keys.green) {
+                                scene.remove(door); gameState.doorList.splice(i,1);
+                            } else if (color === 'yellow' && gameState.keys.yellow) {
+                                scene.remove(door); gameState.doorList.splice(i,1);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ==================== 死亡遮罩 ====================
+            const deathOverlay = document.getElementById('deathOverlay');
+            function startDeathSequence() {
+                deathOverlay.style.display = 'block';
+                setTimeout(() => location.reload(), 1000);
+            }
+
+            // ==================== 开发者工具 ====================
+            function initDevTools() {
+                const devTButton = document.getElementById('devTButton');
+                const devConsole = document.getElementById('devConsole');
+                const devInput = document.getElementById('devInput');
+                const closeBtn = document.getElementById('closeDevBtn');
+                
+                devTButton.addEventListener('click', () => {
+                    devConsole.style.display = 'flex';
+                });
+                
+                devInput.addEventListener('keypress', (e) => {
+                    if(e.key === 'Enter') {
+                        const cmd = e.target.value.trim();
+                        if(cmd === 'give almond') {
+                            gameState.items.almondWater++;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            e.target.value = '';
+                        } else if(cmd === 'give flashlight') {
+                            gameState.hasFlashlight = true;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            e.target.value = '';
+                        } else if(cmd === 'keys') {
+                            gameState.keys = { red: true, blue: true, green: true, yellow: true };
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            e.target.value = '';
+                        } else {
+                            alert('未知命令');
+                        }
+                    }
+                });
+                
+                closeBtn.addEventListener('click', () => {
+                    devConsole.style.display = 'none';
+                    devInput.value = '';
+                });
+            }
+
+            // ==================== 触摸滑动 ====================
+            const touchArea = document.getElementById('touchArea');
+            let lastX = 0;
+            
+            touchArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+            
+            touchArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - lastX;
+                gameState.rotationY -= dx * 0.01;
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+
+            // ==================== 键盘/按钮 ====================
+            const keysPressed = { w: false, s: false, a: false, d: false };
+            
+            document.addEventListener('keydown', (e) => {
+                if(gameState.isCaught) return;
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keysPressed[k] = true;
+                    e.preventDefault();
+                } else if(k === ' ') {
+                    handleJump();
+                    e.preventDefault();
+                } else if(k === 'c') {
+                    handleCrouch();
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keysPressed[k] = false;
+                    e.preventDefault();
+                }
+            });
+            
+            document.getElementById('forwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught) keysPressed.w = true; });
+            document.getElementById('forwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keysPressed.w = false; });
+            document.getElementById('backwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught) keysPressed.s = true; });
+            document.getElementById('backwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keysPressed.s = false; });
+            document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught) keysPressed.a = true; });
+            document.getElementById('leftBtn').addEventListener('touchend', (e) => { e.preventDefault(); keysPressed.a = false; });
+            document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught) keysPressed.d = true; });
+            document.getElementById('rightBtn').addEventListener('touchend', (e) => { e.preventDefault(); keysPressed.d = false; });
+            
+            document.getElementById('jumpBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleJump(); });
+            document.getElementById('jumpBtn').addEventListener('touchend', (e) => { e.preventDefault(); });
+            document.getElementById('crouchBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleCrouch(); });
+            document.getElementById('crouchBtn').addEventListener('touchend', (e) => { e.preventDefault(); });
+            
+            document.getElementById('interactBtn').addEventListener('click', interactHandler);
+            document.getElementById('interactBtn').addEventListener('touchstart', (e) => { e.preventDefault(); interactHandler(); });
+            
+            document.getElementById('useBtn').addEventListener('click', useItem);
+            document.getElementById('useBtn').addEventListener('touchstart', (e) => { e.preventDefault(); useItem(); });
+            
+            document.getElementById('dropBtn').addEventListener('click', dropItem);
+            document.getElementById('dropBtn').addEventListener('touchstart', (e) => { e.preventDefault(); dropItem(); });
+            
+            document.getElementById('flashlightToggleBtn').addEventListener('click', () => {
+                if(gameState.hasFlashlight && gameState.activeSlot === gameState.flashlightSlotIndex) {
+                    gameState.flashlightOn = !gameState.flashlightOn;
+                }
+                updateUI();
+            });
+            
+            document.querySelectorAll('.inventory-slot').forEach((slot, idx) => {
+                slot.addEventListener('click', () => {
+                    if(slot.classList.contains('has-item')) {
+                        document.querySelectorAll('.inventory-slot').forEach(s => s.classList.remove('active'));
+                        slot.classList.add('active');
+                        gameState.activeSlot = idx;
+                        updateUI();
+                    }
+                });
+            });
+            
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+            
+            settingsBtn.onclick = () => {
+                settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+            };
+            
+            document.getElementById('closeSettingsBtn').onclick = () => {
+                settingsPanel.style.display = 'none';
+            };
+            
+            document.getElementById('qualityLow').onclick = () => applyQualitySettings('low');
+            document.getElementById('qualityMid').onclick = () => applyQualitySettings('mid');
+            document.getElementById('qualityHigh').onclick = () => applyQualitySettings('high');
+
+            // ==================== 主循环 ====================
+            let lastTime = performance.now();
+            let catchStartTime = 0;
+            
+            function updatePlayer() {
+                const now = performance.now();
+                const dt = Math.min(0.1, (now - lastTime) / 1000);
+                lastTime = now;
+                
+                if(!gameState.isAlive) return;
+                
+                if(gameState.isCaught) {
+                    if(catchStartTime === 0) catchStartTime = now;
+                    if(now - catchStartTime >= 1000) {
+                        startDeathSequence();
+                    }
+                    return;
+                }
+                
+                updateCrouch();
+                updateJump();
+                
+                const speed = gameState.isCrouching ? 0.12 : 0.22;
+let nx = gameState.player.x;
+let nz = gameState.player.z;
+
+if (keysPressed.w) {
+    nx -= Math.sin(gameState.rotationY) * speed;
+    nz -= Math.cos(gameState.rotationY) * speed;
+}
+if (keysPressed.s) {
+    nx += Math.sin(gameState.rotationY) * speed;
+    nz += Math.cos(gameState.rotationY) * speed;
+}
+if (keysPressed.a) {
+    nx -= Math.cos(gameState.rotationY) * speed;
+    nz += Math.sin(gameState.rotationY) * speed;
+}
+if (keysPressed.d) {
+    nx += Math.cos(gameState.rotationY) * speed;
+    nz -= Math.sin(gameState.rotationY) * speed;
+}
+
+// 调试输出 - 检查按键是否被触发
+if (keysPressed.w || keysPressed.s || keysPressed.a || keysPressed.d) {
+    console.log('移动中:', keysPressed);
+}
+                
+                if(!checkCollision(nx, nz)) {
+                    gameState.player.x = nx;
+                    gameState.player.z = nz;
+                }
+                
+                let isBeingChased = false;
+                gameState.partygoers.forEach(p => {
+                    const dx = gameState.player.x - p.position.x;
+                    const dz = gameState.player.z - p.position.z;
+                    const dist = Math.sqrt(dx*dx + dz*dz);
+                    
+                    p.lookAt(gameState.player.x, 2, gameState.player.z);
+                    
+                    const canSee = dist < 15 && !gameState.isCrouching;
+                    
+                    if (canSee) {
+                        p.userData.isChasing = true;
+                        isBeingChased = true;
+                        
+                        if (dist > 2.5) {
+                            p.position.x += (dx/dist) * 0.15;
+                            p.position.z += (dz/dist) * 0.15;
+                        }
+                        
+                        if (dist < 3.0 && !gameState.isCaught) {
+                            gameState.isCaught = true;
+                            catchStartTime = now;
+                        }
+                    } else {
+                        p.userData.isChasing = false;
+                        p.userData.walkDir += (Math.random() - 0.5) * 0.1;
+                        p.position.x += Math.sin(p.userData.walkDir) * 0.05;
+                        p.position.z += Math.cos(p.userData.walkDir) * 0.05;
+                    }
+                });
+                
+                document.getElementById('monsterStatus').textContent = isBeingChased ? '🔴派对客追击' : '👾派对客游荡';
+                
+                gameState.sanity -= gameState.sanityDrainRate * dt * (isBeingChased ? 8 : 2);
+                gameState.sanity = Math.max(0, Math.min(100, gameState.sanity));
+                
+                if(gameState.sanity <= 0) {
+                    gameState.isAlive = false;
+                    startDeathSequence();
+                }
+                
+                const bodyOffset = 2.0;
+                playerBody.position.set(
+                    gameState.player.x + Math.sin(gameState.rotationY) * bodyOffset,
+                    gameState.player.y - 0.8,
+                    gameState.player.z + Math.cos(gameState.rotationY) * bodyOffset
+                );
+                playerBody.rotation.y = gameState.rotationY;
+                
+                camera.position.set(
+                    gameState.player.x, 
+                    gameState.player.y + 0.2, 
+                    gameState.player.z + 1.5
+                );
+                camera.rotation.set(0, gameState.rotationY, 0);
+                
+                if(gameState.hasFlashlight && gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlightOn) {
+                    flashlight.visible = true;
+                    flashlight.position.copy(camera.position);
+                    flashlightTarget.position.set(
+                        camera.position.x - Math.sin(gameState.rotationY) * 15,
+                        camera.position.y - 0.2,
+                        camera.position.z - Math.cos(gameState.rotationY) * 15
+                    );
+                } else {
+                    flashlight.visible = false;
+                }
+                
+                let hintText = '';
+                
+                gameState.itemsList.forEach(item => {
+                    const dist = Math.sqrt(
+                        (gameState.player.x - item.position.x)**2 + 
+                        (gameState.player.z - item.position.z)**2
+                    );
+                    if (dist < 3) {
+                        if (item.userData.type === 'almond') hintText = '🧪 捡起杏仁水';
+                        else if (item.userData.type === 'pain') hintText = '🥤 捡起饮料';
+                        else if (item.userData.type === 'flashlight') hintText = '🔦 捡起手电筒';
+                        else if (item.userData.type === 'key') hintText = '🔑 捡起钥匙';
+                    }
+                });
+                
+                gameState.doorList.forEach(door => {
+                    const dist = Math.sqrt(
+                        (gameState.player.x - door.position.x)**2 + 
+                        (gameState.player.z - door.position.z)**2
+                    );
+                    if (dist < 4) {
+                        if (door.userData.type === 'whiteDoorGroup') hintText = '🚪 白色门 (需要所有钥匙)';
+                        else if (door.userData.color) hintText = `🚪 ${door.userData.color}色门`;
+                    }
+                });
+                
+                document.getElementById('interactionHint').style.display = hintText ? 'block' : 'none';
+                document.getElementById('interactionHint').textContent = hintText || '🔍';
+                
+                updateUI();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                updatePlayer();
+                renderer.render(scene, camera);
+            }
+
+            // 构建场景
+            const exitPos = createMaze();
+            createTables();
+            createDoors();
+            createWhiteDoor(exitPos);
+            createItems();
+            createPartygoers();
+            
+            // 出生点安全
+            gameState.player.x = 10;
+            gameState.player.z = 10;
+            
+            applyQualitySettings('high');
+            updateUI();
+            initDevTools();
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Level 10 · 麦田惊魂</title>
+    <style>
+        /* ==================== UI 完全照搬 Level0 的样式和位置 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: #0a1a2a;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #0a1a2a;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        #inventory {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            background: rgba(10, 10, 10, 0.85);
+            padding: 6px;
+            border-radius: 14px;
+            border: 2px solid #8b6b4d;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .inventory-slot {
+            width: 42px;
+            height: 42px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 2px solid #6a4e3a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #ffd966;
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+        }
+        
+        .inventory-slot.has-item {
+            border-color: #ffaa00;
+        }
+        
+        .inventory-slot.active {
+            border-color: #FFD700;
+            box-shadow: 0 0 12px gold;
+            transform: scale(1.05);
+        }
+        
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #8b6b4d;
+            border-radius: 16px;
+            color: #ffd966;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #4a3a2a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .control-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #4a3a2a;
+            background: #3a2a1a;
+        }
+        
+        #jumpBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 120px;
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #8b6b4d;
+            border-radius: 16px;
+            color: #ffd966;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #4a3a2a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #jumpBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #4a3a2a;
+            background: #3a2a1a;
+        }
+        
+        #interactBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background: rgba(150, 150, 150, 0.95);
+            border: 3px solid white;
+            border-radius: 50%;
+            font-size: 38px;
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a5a5a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #interactBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #5a5a5a;
+            background: #aaa;
+        }
+        
+        #useBtn {
+            position: fixed;
+            top: 110px;
+            right: 15px;
+            width: 55px;
+            height: 55px;
+            background: #4CAF50;
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #2a5a2a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #useBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2a5a2a;
+            background: #45a049;
+        }
+        
+        #dropBtn {
+            position: fixed;
+            top: 110px;
+            right: 80px;
+            width: 55px;
+            height: 55px;
+            background: #ff4444;
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #aa2222;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        #dropBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa2222;
+        }
+        
+        #flashlightToggleBtn {
+            position: fixed;
+            bottom: 100px;
+            right: 35px;
+            width: 55px;
+            height: 55px;
+            background: #ffaa00;
+            border: 3px solid white;
+            border-radius: 50%;
+            font-size: 26px;
+            color: black;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #aa7700;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .flashlight-on { background: #ffaa00; }
+        .flashlight-off { background: #444; color: #ccc; }
+        
+        .touch-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 500;
+            background: transparent;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        
+        .status-display {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            background: rgba(10, 10, 10, 0.85);
+            color: #ffd966;
+            padding: 10px 15px;
+            border-radius: 14px;
+            border: 2px solid #8b6b4d;
+            font-size: 14px;
+            z-index: 2000;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            min-width: 200px;
+        }
+        
+        .status-display div {
+            margin-bottom: 5px;
+        }
+        
+        .sanity-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(50, 50, 50, 0.8);
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+            border: 1px solid #8b6b4d;
+        }
+        
+        .sanity-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00c8ff, #00ffaa);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        #interactionHint {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: #ffd966;
+            padding: 10px 22px;
+            border-radius: 40px;
+            display: none;
+            font-size: 17px;
+            font-weight: bold;
+            border: 2px solid #8b6b4d;
+            z-index: 2000;
+            pointer-events: none;
+        }
+        
+        #settingsBtn {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #8b6b4d;
+            border-radius: 12px;
+            color: #ffd966;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #4a3a2a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton {
+            position: fixed;
+            top: 70px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: #ffaa00;
+            border: 3px solid white;
+            border-radius: 12px;
+            color: black;
+            font-size: 22px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3001;
+            box-shadow: 0 4px 0 #aa7700;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa7700;
+        }
+        
+        #settingsPanel {
+            position: fixed;
+            top: 75px;
+            right: 12px;
+            width: 220px;
+            background: rgba(10, 10, 10, 0.98);
+            border: 3px solid #8b6b4d;
+            border-radius: 16px;
+            padding: 18px;
+            color: #ffd966;
+            z-index: 3500;
+            pointer-events: auto;
+            display: none;
+            backdrop-filter: blur(8px);
+        }
+        
+        .quality-option {
+            background: rgba(40, 40, 40, 0.9);
+            border: 2px solid #6a4e3a;
+            border-radius: 30px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .quality-option.active {
+            background: #ffaa00;
+            color: black;
+            border-color: white;
+        }
+        
+        .close-btn {
+            width: 100%;
+            padding: 10px;
+            background: #5a4e2b;
+            border: none;
+            border-radius: 30px;
+            color: #ffd966;
+            font-size: 15px;
+            margin-top: 12px;
+            cursor: pointer;
+            border-bottom: 3px solid #3a351a;
+        }
+        
+        .close-btn:active {
+            transform: translateY(2px);
+            border-bottom: none;
+        }
+        
+        #winMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 35px;
+            border-radius: 26px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #ffaa00;
+            color: #ffd966;
+            pointer-events: auto;
+        }
+        
+        #winMessage button, #deathMessage button {
+            margin-top: 22px;
+            padding: 12px 35px;
+            background: #ffaa00;
+            border: none;
+            border-radius: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: black;
+            border-bottom: 4px solid #aa7700;
+            cursor: pointer;
+        }
+        
+        #deathMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 35px;
+            border-radius: 26px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #ff0000;
+            color: #ff6666;
+            pointer-events: auto;
+        }
+        
+        #deathOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0044aa;
+            display: none;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        #escapedTimer {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: white;
+            text-shadow: 0 0 20px blue;
+            display: none;
+            z-index: 5000;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <div id="inventory">
+            <div class="inventory-slot" id="slot1"></div>
+            <div class="inventory-slot" id="slot2"></div>
+            <div class="inventory-slot" id="slot3"></div>
+            <div class="inventory-slot" id="slot4"></div>
+            <div class="inventory-slot" id="slot5"></div>
+            <div class="inventory-slot" id="slot6"></div>
+            <div class="inventory-slot" id="slot7"></div>
+            <div class="inventory-slot" id="slot8"></div>
+        </div>
+        
+        <div id="controls">
+            <div class="control-group"><button class="control-btn" id="forwardBtn">▲</button></div>
+            <div class="control-group">
+                <button class="control-btn" id="leftBtn">◀</button>
+                <button class="control-btn" id="backwardBtn">▼</button>
+                <button class="control-btn" id="rightBtn">▶</button>
+            </div>
+        </div>
+        
+        <button id="jumpBtn">⬆️</button>
+        <button id="interactBtn">✋</button>
+        <button id="useBtn">使用</button>
+        <button id="dropBtn">🗑️</button>
+        <button id="flashlightToggleBtn">🔦</button>
+        <button id="settingsBtn">⚙️</button>
+        <button id="devTButton">T</button>
+        
+        <div id="settingsPanel">
+            <div style="font-size:18px; font-weight:bold; margin-bottom:15px; text-align:center;">⚙️ 画质</div>
+            <div id="qualityLow" class="quality-option"><span>📱 低质</span><span>完全可见</span></div>
+            <div id="qualityMid" class="quality-option"><span>📲 中等</span><span>平衡</span></div>
+            <div id="qualityHigh" class="quality-option active"><span>💻 高质</span><span>迷雾+月光</span></div>
+            <button class="close-btn" id="closeSettingsBtn">关闭</button>
+        </div>
+        
+        <div id="interactionHint">🔍 点击手掌交互</div>
+        
+        <div class="status-display">
+            <div>⚡ 电闸: <span id="switchCount">0</span>/6</div>
+            <div>🔧 零件: <span id="partCount">0</span>/5</div>
+            <div>💧 杏仁水: <span id="almondCount">0</span></div>
+            <div>🔦 手电筒: <span id="flashlightCount">0</span></div>
+            <div>📻 对讲机: <span id="radioCount">0</span>/5</div>
+            <div>🧠 理智: <span id="sanityPercent">100%</span></div>
+            <div class="sanity-bar"><div id="sanityFill" class="sanity-fill" style="width:100%"></div></div>
+            <div>👾 <span id="monsterStatus">稻草人游荡</span></div>
+            <div>🎮 <span id="qualityStatus">高质</span></div>
+        </div>
+    </div>
+    
+    <div id="deathOverlay"></div>
+    
+    
+    
+    <div id="deathMessage">
+        <h2>💀 你被稻草人抓住了</h2>
+        <button onclick="location.reload()">重生</button>
+    </div>
+    
+    <div id="escapedTimer">20</div>
+    
+    <div class="touch-area" id="touchArea"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        (function() {
+            "use strict";
+
+            // ==================== 游戏状态 ====================
+            const gameState = {
+                player: { x: 10, y: 1.6, z: 10 },
+                rotationY: 0,
+                switches: 0,
+                parts: 0,
+                almondWater: 0,
+                painSoda: 0,
+                flashlights: 0,
+                radios: 0,
+                signalGun: 0,
+                flareActive: false,
+                nearItem: null,
+                nearSwitch: false,
+                nearTractor: false,
+                isAlive: true,
+                activeSlot: -1,
+                flashlightSlotIndex: -1,
+                flashlightOn: false,
+                isJumping: false,
+                jumpVelocity: 0,
+                onGround: true,
+                isCaught: false,
+                catchStartTime: 0,
+                sanity: 100,
+                sanityDrainRate: 0.03,
+                quality: 'high',
+                switchStates: [false, false, false, false, false, false],
+                partsUnlocked: false,
+                tractorFixed: false,
+                escaping: false,
+                escapeStartTime: 0,
+                itemsList: [],
+                towers: [],
+                scarecrow: null
+            };
+
+            // ==================== Three.js 初始化 ====================
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a1a2a);
+            
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 200);
+            camera.position.set(10, 1.8, 10);
+            
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setClearColor(0x0a1a2a);
+
+            // ==================== 灯光系统 ====================
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8); // 基础亮度提高
+            scene.add(ambientLight);
+            
+            const moonLight = new THREE.DirectionalLight(0xaaccff, 0.8);
+            moonLight.position.set(30, 50, 30);
+            moonLight.castShadow = true;
+            moonLight.shadow.mapSize.width = 1024;
+            moonLight.shadow.mapSize.height = 1024;
+            scene.add(moonLight);
+            
+            const fillLight = new THREE.DirectionalLight(0x88aaff, 0.4);
+            fillLight.position.set(-20, 20, -20);
+            scene.add(fillLight);
+            
+            const flashlight = new THREE.SpotLight(0xfff0b0, 2.5);
+            flashlight.angle = 0.4;
+            flashlight.penumbra = 0.3;
+            flashlight.distance = 50;
+            flashlight.castShadow = true;
+            scene.add(flashlight);
+            flashlight.visible = false;
+            
+            const flashlightTarget = new THREE.Object3D();
+            flashlight.target = flashlightTarget;
+            scene.add(flashlightTarget);
+
+            // ==================== 迷雾系统 ====================
+            function updateFog(quality) {
+                if (quality === 'low') {
+                    scene.fog = null;
+                } else if (quality === 'mid') {
+                    scene.fog = new THREE.Fog(0x0a1a2a, 40, 100);
+                } else {
+                    scene.fog = new THREE.FogExp2(0x0a1a2a, 0.008);
+                }
+            }
+
+            // ==================== 画质设置 ====================
+            function applyQualitySettings(quality) {
+                gameState.quality = quality;
+                document.getElementById('qualityStatus').textContent = 
+                    quality === 'low' ? '低质' : quality === 'mid' ? '中等' : '高质';
+                
+                document.querySelectorAll('.quality-option').forEach(el => el.classList.remove('active'));
+                if(quality === 'low') document.getElementById('qualityLow').classList.add('active');
+                if(quality === 'mid') document.getElementById('qualityMid').classList.add('active');
+                if(quality === 'high') document.getElementById('qualityHigh').classList.add('active');
+                
+                updateFog(quality);
+                
+                // 调整亮度：低质最亮，高质暗
+                if (quality === 'low') {
+                    ambientLight.intensity = 1.2;
+                    moonLight.intensity = 0.8;
+                    renderer.shadowMap.enabled = false;
+                    renderer.setPixelRatio(1);
+                } else if (quality === 'mid') {
+                    ambientLight.intensity = 0.8;
+                    moonLight.intensity = 0.7;
+                    renderer.shadowMap.enabled = true;
+                    renderer.setPixelRatio(1.5);
+                } else {
+                    ambientLight.intensity = 0.5;
+                    moonLight.intensity = 0.6;
+                    renderer.shadowMap.enabled = true;
+                    renderer.setPixelRatio(window.devicePixelRatio);
+                }
+            }
+
+            // ==================== 玩家身体 ====================
+            const playerBody = new THREE.Group();
+
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0xffaa33 });
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.4), torsoMat);
+            torso.position.y = 0.7;
+            playerBody.add(torso);
+
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xff9933 });
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.4), headMat);
+            head.position.y = 1.5;
+            playerBody.add(head);
+
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const mask = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), maskMat);
+            mask.position.set(0, 1.5, 0.25);
+            playerBody.add(mask);
+
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftArm.position.set(-0.6, 1.0, 0.2);
+            playerBody.add(leftArm);
+
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightArm.position.set(0.6, 1.0, 0.2);
+            playerBody.add(rightArm);
+
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftLeg.position.set(-0.25, -0.3, 0);
+            playerBody.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightLeg.position.set(0.25, -0.3, 0);
+            playerBody.add(rightLeg);
+
+            const handHolder = new THREE.Group();
+            handHolder.position.set(0.6, 0.5, 0.4);
+            playerBody.add(handHolder);
+
+            playerBody.position.set(0, 0, 0);
+            scene.add(playerBody);
+
+            // ==================== 手持物品容器 ====================
+            const heldItemContainer = new THREE.Group();
+            heldItemContainer.position.set(0.6, -0.4, -0.8);
+            camera.add(heldItemContainer);
+            scene.add(camera);
+
+            // ==================== 创建麦田 ====================
+            function createWheatField() {
+                const groundMat = new THREE.MeshStandardMaterial({ color: 0x3a5f3a });
+                const ground = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), groundMat);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = 0;
+                ground.receiveShadow = true;
+                scene.add(ground);
+                
+                const wheatMat = new THREE.MeshStandardMaterial({ color: 0x8b8b4a });
+                const wheatCount = 5000; // 减少数量提高性能
+                
+                for (let i = 0; i < wheatCount; i++) {
+                    const x = (Math.random() - 0.5) * 280;
+                    const z = (Math.random() - 0.5) * 280;
+                    const height = 2.0 + Math.random() * 0.5;
+                    
+                    const wheat = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.05, 0.05, height, 4),
+                        wheatMat
+                    );
+                    wheat.position.set(x, height/2, z);
+                    wheat.castShadow = true;
+                    wheat.receiveShadow = true;
+                    scene.add(wheat);
+                    
+                    const headMat = new THREE.MeshStandardMaterial({ color: 0xcdad5a });
+                    const head = new THREE.Mesh(
+                        new THREE.ConeGeometry(0.15, 0.2, 4),
+                        headMat
+                    );
+                    head.position.set(x, height, z);
+                    head.castShadow = true;
+                    scene.add(head);
+                }
+            }
+
+            // ==================== 创建电塔（修复版）====================
+            function createTower(x, z, index) {
+                const group = new THREE.Group();
+                const metalMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+                
+                // 四个主柱
+                const positions = [
+                    [-1.5, 0, -1.5], [1.5, 0, -1.5], [-1.5, 0, 1.5], [1.5, 0, 1.5]
+                ];
+                positions.forEach(pos => {
+                    const pillar = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.3, 0.4, 15, 6),
+                        metalMat
+                    );
+                    pillar.position.set(pos[0], 7.5, pos[1]);
+                    pillar.castShadow = true;
+                    pillar.receiveShadow = true;
+                    group.add(pillar);
+                });
+                
+                // 横梁
+                for (let y = 2; y < 15; y += 3) {
+                    const beam1 = new THREE.Mesh(
+                        new THREE.BoxGeometry(3.2, 0.2, 0.3),
+                        metalMat
+                    );
+                    beam1.position.set(0, y, 0);
+                    beam1.castShadow = true;
+                    group.add(beam1);
+                    
+                    const beam2 = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.2, 3.2),
+                        metalMat
+                    );
+                    beam2.position.set(0, y, 0);
+                    beam2.castShadow = true;
+                    group.add(beam2);
+                }
+                
+                const top = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.8, 1.5, 6),
+                    metalMat
+                );
+                top.position.set(0, 15, 0);
+                top.castShadow = true;
+                group.add(top);
+                
+                // 电闸组
+                const switchGroup = new THREE.Group();
+                
+                const switchBase = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.2, 0.3, 0.8),
+                    new THREE.MeshStandardMaterial({ color: 0x444444 })
+                );
+                switchBase.position.set(0, 0.5, 2.0);
+                switchBase.castShadow = true;
+                switchGroup.add(switchBase);
+                
+                const switchLever = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.2, 0.6, 0.2),
+                    new THREE.MeshStandardMaterial({ color: 0xffaa00 })
+                );
+                switchLever.position.set(0, 1.0, 2.0);
+                switchLever.castShadow = true;
+                switchGroup.add(switchLever); // 正确添加 lever
+                
+                const towerLight = new THREE.PointLight(0xffaa66, 0.6, 30);
+                towerLight.position.set(0, 12, 0);
+                group.add(towerLight);
+                
+                group.add(switchGroup);
+                group.position.set(x, 0, z);
+                group.userData = { 
+                    type: 'tower',
+                    index: index,
+                    switchLever: switchLever,
+                    pulled: false
+                };
+                
+                scene.add(group);
+                gameState.towers.push(group);
+                
+                return group;
+            }
+
+            // ==================== 创建拖拉机 ====================
+            function createTractor() {
+                const group = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0xcc4444 });
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(3.0, 1.5, 5.0),
+                    bodyMat
+                );
+                body.position.y = 0.75;
+                body.castShadow = true;
+                body.receiveShadow = true;
+                group.add(body);
+                
+                const cabMat = new THREE.MeshStandardMaterial({ color: 0xaa3333 });
+                const cab = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.8, 1.2, 2.0),
+                    cabMat
+                );
+                cab.position.set(0, 1.6, -0.5);
+                cab.castShadow = true;
+                group.add(cab);
+                
+                const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                const wheelPositions = [
+                    [-1.4, 0.4, 1.8], [1.4, 0.4, 1.8],
+                    [-1.4, 0.4, -1.8], [1.4, 0.4, -1.8]
+                ];
+                wheelPositions.forEach(pos => {
+                    const wheel = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.6, 0.6, 0.4, 8),
+                        wheelMat
+                    );
+                    wheel.rotation.z = Math.PI / 2;
+                    wheel.position.set(pos[0], pos[1], pos[2]);
+                    wheel.castShadow = true;
+                    group.add(wheel);
+                });
+                
+                const pipe = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.15, 0.15, 0.8, 6),
+                    new THREE.MeshStandardMaterial({ color: 0x444444 })
+                );
+                pipe.position.set(1.0, 1.3, -2.2);
+                pipe.castShadow = true;
+                group.add(pipe);
+                
+                group.position.set(100, 0, 100);
+                group.userData = { type: 'tractor', fixed: false };
+                
+                scene.add(group);
+                return group;
+            }
+
+            // ==================== 创建稻草人 ====================
+            function createScarecrow() {
+                const group = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b });
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.4, 0.4, 1.8, 6),
+                    bodyMat
+                );
+                body.position.y = 0.9;
+                body.castShadow = true;
+                group.add(body);
+                
+                const headMat = new THREE.MeshStandardMaterial({ color: 0xff8c00 });
+                const head = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.5, 8),
+                    headMat
+                );
+                head.position.y = 1.8;
+                head.castShadow = true;
+                group.add(head);
+                
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x330000 });
+                const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 4), eyeMat);
+                eye1.position.set(-0.2, 1.9, 0.4);
+                group.add(eye1);
+                
+                const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 4), eyeMat);
+                eye2.position.set(0.2, 1.9, 0.4);
+                group.add(eye2);
+                
+                const axeGroup = new THREE.Group();
+                const handle = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.1, 1.2, 6),
+                    new THREE.MeshStandardMaterial({ color: 0x8B4513 })
+                );
+                handle.rotation.z = 0.3;
+                handle.position.set(0.6, 1.2, 0);
+                handle.castShadow = true;
+                axeGroup.add(handle);
+                
+                const blade = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 0.4, 0.1),
+                    new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                );
+                blade.position.set(1.0, 1.5, 0);
+                blade.rotation.z = -0.2;
+                blade.castShadow = true;
+                axeGroup.add(blade);
+                group.add(axeGroup);
+                
+                const hatMat = new THREE.MeshStandardMaterial({ color: 0x4a3a2a });
+                const hatBase = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.6, 0.7, 0.2, 6),
+                    hatMat
+                );
+                hatBase.position.y = 2.1;
+                group.add(hatBase);
+                
+                const hatTop = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.4, 0.5, 6),
+                    hatMat
+                );
+                hatTop.position.y = 2.4;
+                group.add(hatTop);
+                
+                group.position.set(50, 0, 50);
+                group.userData = {
+                    speed: 0.18,
+                    visible: true,
+                    lastSeenTime: 0,
+                    wanderTarget: null,
+                    wanderTimer: 0
+                };
+                
+                scene.add(group);
+                return group;
+            }
+
+            // ==================== 物品创建函数 ====================
+            function createAlmondWater(x, z) {
+                const group = new THREE.Group();
+                const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8),
+                    canMat
+                );
+                body.position.y = 0.4;
+                body.castShadow = true;
+                group.add(body);
+                
+                const topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                const top = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6),
+                    topMat
+                );
+                top.position.y = 0.85;
+                top.castShadow = true;
+                group.add(top);
+                
+                group.position.set(x, 0.4, z);
+                group.userData = { type: 'almond' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createPainSoda(x, z) {
+                const group = new THREE.Group();
+                const canMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8),
+                    canMat
+                );
+                body.position.y = 0.4;
+                body.castShadow = true;
+                group.add(body);
+                
+                const topMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                const top = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6),
+                    topMat
+                );
+                top.position.y = 0.85;
+                top.castShadow = true;
+                group.add(top);
+                
+                group.position.set(x, 0.4, z);
+                group.userData = { type: 'pain' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createFlashlightItem(x, z) {
+                const group = new THREE.Group();
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.2, 1.0, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x222222 })
+                );
+                body.rotation.x = Math.PI / 2;
+                body.position.set(0, 0, 0);
+                body.castShadow = true;
+                group.add(body);
+                
+                const head = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x333333 })
+                );
+                head.rotation.x = Math.PI / 2;
+                head.position.set(0, 0, 0.65);
+                head.castShadow = true;
+                group.add(head);
+                
+                group.position.set(x, 0.5, z);
+                group.userData = { type: 'flashlight' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createRadio(x, z) {
+                const group = new THREE.Group();
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.4, 0.2, 0.6),
+                    new THREE.MeshStandardMaterial({ color: 0x444444 })
+                );
+                body.position.y = 0.1;
+                body.castShadow = true;
+                group.add(body);
+                
+                const antenna = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.03, 0.03, 0.3, 4),
+                    new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                );
+                antenna.position.set(0, 0.3, -0.2);
+                antenna.castShadow = true;
+                group.add(antenna);
+                
+                group.position.set(x, 0.2, z);
+                group.userData = { type: 'radio' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createSignalGun(x, z) {
+                const group = new THREE.Group();
+                const body = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.4, 0.15, 0.6),
+                    new THREE.MeshStandardMaterial({ color: 0x888888 })
+                );
+                body.position.y = 0.1;
+                body.castShadow = true;
+                group.add(body);
+                
+                const barrel = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.1, 0.5, 6),
+                    new THREE.MeshStandardMaterial({ color: 0x666666 })
+                );
+                barrel.rotation.x = Math.PI / 2;
+                barrel.position.set(0, 0.1, 0.4);
+                barrel.castShadow = true;
+                group.add(barrel);
+                
+                group.position.set(x, 0.2, z);
+                group.userData = { type: 'signalGun' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createPart(x, z) {
+                const group = new THREE.Group();
+                const partMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, emissive: 0x224466 });
+                const base = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 0.2, 0.3),
+                    partMat
+                );
+                base.position.y = 0.1;
+                base.castShadow = true;
+                group.add(base);
+                
+                const gear = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.2, 0.1, 6),
+                    partMat
+                );
+                gear.position.y = 0.25;
+                gear.castShadow = true;
+                group.add(gear);
+                
+                group.position.set(x, 0.2, z);
+                group.userData = { type: 'part' };
+                scene.add(group);
+                gameState.itemsList.push(group);
+            }
+
+            function createInitialItems() {
+                for (let i = 0; i < 10; i++) {
+                    const x = (Math.random() - 0.5) * 250;
+                    const z = (Math.random() - 0.5) * 250;
+                    createAlmondWater(x, z);
+                }
+                for (let i = 0; i < 3; i++) {
+                    const x = (Math.random() - 0.5) * 250;
+                    const z = (Math.random() - 0.5) * 250;
+                    createPainSoda(x, z);
+                }
+                for (let i = 0; i < 2; i++) {
+                    const x = (Math.random() - 0.5) * 250;
+                    const z = (Math.random() - 0.5) * 250;
+                    createFlashlightItem(x, z);
+                }
+                for (let i = 0; i < 5; i++) {
+                    const x = (Math.random() - 0.5) * 250;
+                    const z = (Math.random() - 0.5) * 250;
+                    createRadio(x, z);
+                }
+                const sx = (Math.random() - 0.5) * 250;
+                const sz = (Math.random() - 0.5) * 250;
+                createSignalGun(sx, sz);
+            }
+
+            function spawnParts() {
+                if (gameState.partsUnlocked) return;
+                gameState.partsUnlocked = true;
+                
+                for (let i = 0; i < 5; i++) {
+                    const x = (Math.random() - 0.5) * 250;
+                    const z = (Math.random() - 0.5) * 250;
+                    createPart(x, z);
+                }
+                
+                document.getElementById('interactionHint').style.display = 'block';
+                document.getElementById('interactionHint').textContent = '✨ 零件出现了！收集5个修复拖拉机';
+                setTimeout(() => {
+                    document.getElementById('interactionHint').style.display = 'none';
+                }, 4000);
+            }
+
+            // ==================== 手持物品模型 ====================
+            function createHeldItemModel(type) {
+                while(heldItemContainer.children.length > 0) {
+                    heldItemContainer.remove(heldItemContainer.children[0]);
+                }
+                if (!type) return;
+                
+                let model;
+                if (type === '🧪') {
+                    model = new THREE.Group();
+                    const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8), canMat);
+                    body.position.y = 0.4;
+                    model.add(body);
+                    const topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6), topMat);
+                    top.position.y = 0.85;
+                    model.add(top);
+                }
+                else if (type === '🔴') {
+                    model = new THREE.Group();
+                    const canMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8), canMat);
+                    body.position.y = 0.4;
+                    model.add(body);
+                    const topMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6), topMat);
+                    top.position.y = 0.85;
+                    model.add(top);
+                }
+                else if (type === '🔦') {
+                    model = new THREE.Group();
+                    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8), bodyMat);
+                    body.rotation.x = Math.PI / 2;
+                    body.position.set(0, 0, 0);
+                    model.add(body);
+                    const headMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8), headMat);
+                    head.rotation.x = Math.PI / 2;
+                    head.position.set(0, 0, 0.7);
+                    model.add(head);
+                }
+                else if (type === '📻') {
+                    model = new THREE.Group();
+                    const body = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.4, 0.2, 0.6),
+                        new THREE.MeshStandardMaterial({ color: 0x444444 })
+                    );
+                    body.position.y = 0.1;
+                    model.add(body);
+                    const antenna = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.03, 0.03, 0.3, 4),
+                        new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                    );
+                    antenna.position.set(0, 0.3, -0.2);
+                    model.add(antenna);
+                }
+                else if (type === '🔫') {
+                    model = new THREE.Group();
+                    const body = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.4, 0.15, 0.6),
+                        new THREE.MeshStandardMaterial({ color: 0x888888 })
+                    );
+                    body.position.y = 0.1;
+                    model.add(body);
+                    const barrel = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.1, 0.5, 6),
+                        new THREE.MeshStandardMaterial({ color: 0x666666 })
+                    );
+                    barrel.rotation.x = Math.PI / 2;
+                    barrel.position.set(0, 0.1, 0.4);
+                    model.add(barrel);
+                }
+                else if (type === '🔧') {
+                    model = new THREE.Group();
+                    const partMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                    const base = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.2, 0.3),
+                        partMat
+                    );
+                    base.position.y = 0.1;
+                    model.add(base);
+                    const gear = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.2, 0.2, 0.1, 6),
+                        partMat
+                    );
+                    gear.position.y = 0.25;
+                    model.add(gear);
+                }
+                
+                if (model) {
+                    model.scale.set(0.3, 0.3, 0.3);
+                    model.rotation.set(0.2, 0.5, 0.1);
+                    heldItemContainer.add(model);
+                }
+            }
+
+            function createBodyHeldItemModel(type) {
+                let model;
+                if (type === '🧪') {
+                    model = new THREE.Group();
+                    const can = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.12, 0.1, 0.4, 8),
+                        new THREE.MeshStandardMaterial({ color: 0xffdd00 })
+                    );
+                    can.position.y = 0.2;
+                    model.add(can);
+                    const cap = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.06, 0.06, 0.05, 6),
+                        new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                    );
+                    cap.position.y = 0.4;
+                    model.add(cap);
+                }
+                else if (type === '🔴') {
+                    model = new THREE.Group();
+                    const can = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.12, 0.1, 0.4, 8),
+                        new THREE.MeshStandardMaterial({ color: 0xff0000 })
+                    );
+                    can.position.y = 0.2;
+                    model.add(can);
+                    const cap = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.06, 0.06, 0.05, 6),
+                        new THREE.MeshStandardMaterial({ color: 0x333333 })
+                    );
+                    cap.position.y = 0.4;
+                    model.add(cap);
+                }
+                else if (type === '🔦') {
+                    model = new THREE.Group();
+                    const body = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.1, 0.5, 8),
+                        new THREE.MeshStandardMaterial({ color: 0x222222 })
+                    );
+                    body.rotation.x = Math.PI / 2;
+                    body.position.set(0, 0, 0);
+                    model.add(body);
+                    const head = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.08, 0.08, 0.15, 8),
+                        new THREE.MeshStandardMaterial({ color: 0x333333 })
+                    );
+                    head.rotation.x = Math.PI / 2;
+                    head.position.set(0, 0, 0.3);
+                    model.add(head);
+                }
+                else if (type === '📻') {
+                    model = new THREE.Group();
+                    const body = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.15, 0.4),
+                        new THREE.MeshStandardMaterial({ color: 0x444444 })
+                    );
+                    body.position.y = 0.1;
+                    model.add(body);
+                    const antenna = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.02, 0.02, 0.2, 4),
+                        new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                    );
+                    antenna.position.set(0, 0.25, -0.15);
+                    model.add(antenna);
+                }
+                else if (type === '🔫') {
+                    model = new THREE.Group();
+                    const body = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.1, 0.4),
+                        new THREE.MeshStandardMaterial({ color: 0x888888 })
+                    );
+                    body.position.y = 0.1;
+                    model.add(body);
+                    const barrel = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.08, 0.08, 0.3, 6),
+                        new THREE.MeshStandardMaterial({ color: 0x666666 })
+                    );
+                    barrel.rotation.x = Math.PI / 2;
+                    barrel.position.set(0, 0.1, 0.3);
+                    model.add(barrel);
+                }
+                else if (type === '🔧') {
+                    model = new THREE.Group();
+                    const partMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                    const base = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.2, 0.15, 0.2),
+                        partMat
+                    );
+                    base.position.y = 0.1;
+                    model.add(base);
+                    const gear = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.15, 0.15, 0.08, 6),
+                        partMat
+                    );
+                    gear.position.y = 0.2;
+                    model.add(gear);
+                }
+                
+                if (model) {
+                    model.scale.set(0.4, 0.4, 0.4);
+                    model.position.set(0.2, 0.1, 0.1);
+                    model.rotation.set(0.2, 0.3, 0.1);
+                }
+                return model;
+            }
+
+            // ==================== 构建场景 ====================
+            function buildScene() {
+                createWheatField();
+                
+                const towerPositions = [
+                    [-80, -60], [0, -80], [80, -60],
+                    [-70, 70], [20, 90], [90, 40]
+                ];
+                towerPositions.forEach((pos, index) => {
+                    createTower(pos[0], pos[1], index);
+                });
+                
+                window.tractor = createTractor();
+                gameState.scarecrow = createScarecrow();
+                createInitialItems();
+                
+                applyQualitySettings('high');
+            }
+
+            function checkCollision(newX, newZ) {
+                return Math.abs(newX) > 140 || Math.abs(newZ) > 140;
+            }
+
+            function updateHeldItem() {
+                if (gameState.activeSlot === -1) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                const slot = document.getElementById('slot'+(gameState.activeSlot+1));
+                if (!slot || !slot.classList.contains('has-item')) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                const itemType = slot.textContent;
+                createHeldItemModel(itemType);
+            }
+
+            function updateBodyHeldItem() {
+                while(handHolder.children.length > 0) {
+                    handHolder.remove(handHolder.children[0]);
+                }
+                if (gameState.activeSlot === -1) return;
+                const slot = document.getElementById('slot'+(gameState.activeSlot+1));
+                if (!slot || !slot.classList.contains('has-item')) return;
+                const itemType = slot.textContent;
+                if (!itemType) return;
+                const model = createBodyHeldItemModel(itemType);
+                if (model) {
+                    handHolder.add(model);
+                }
+            }
+            function updateUI() {
+                document.getElementById('switchCount').textContent = gameState.switches;
+                document.getElementById('partCount').textContent = gameState.parts;
+                document.getElementById('almondCount').textContent = gameState.almondWater;
+                document.getElementById('flashlightCount').textContent = gameState.flashlights;
+                document.getElementById('radioCount').textContent = gameState.radios;
+                document.getElementById('sanityPercent').textContent = Math.floor(gameState.sanity) + '%';
+                document.getElementById('sanityFill').style.width = gameState.sanity + '%';
+                
+                for(let i=1;i<=8;i++) {
+                    const slot = document.getElementById('slot'+i);
+                    slot.textContent = '';
+                    slot.classList.remove('has-item', 'active');
+                }
+                let slotIdx = 0;
+                for(let i=0; i<gameState.almondWater; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🧪';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                for(let i=0; i<gameState.painSoda; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🔴';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                for(let i=0; i<gameState.flashlights; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🔦';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        if (i === 0) gameState.flashlightSlotIndex = slotIdx;
+                        slotIdx++;
+                    }
+                }
+                for(let i=0; i<gameState.radios; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '📻';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                if (gameState.signalGun > 0 && slotIdx<8) {
+                    document.getElementById('slot'+(slotIdx+1)).textContent = '🔫';
+                    document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                    slotIdx++;
+                }
+                for(let i=0; i<gameState.parts; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🔧';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                
+                if(gameState.activeSlot !== -1) {
+                    const active = document.getElementById('slot'+(gameState.activeSlot+1));
+                    if(active) active.classList.add('active');
+                }
+                
+                const fb = document.getElementById('flashlightToggleBtn');
+                if(gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlights > 0) {
+                    fb.style.display = 'flex';
+                    fb.innerHTML = gameState.flashlightOn ? '🔦' : '🔦';
+                    fb.className = gameState.flashlightOn ? 'flashlight-on' : 'flashlight-off';
+                } else {
+                    fb.style.display = 'none';
+                }
+                
+                updateHeldItem();
+                updateBodyHeldItem();
+            }
+
+            function handleJump() {
+                if(gameState.onGround && !gameState.isCaught && !gameState.escaping) {
+                    gameState.isJumping = true;
+                    gameState.jumpVelocity = 0.28;
+                    gameState.onGround = false;
+                }
+            }
+
+            function updateJump() {
+                if(gameState.isJumping) {
+                    gameState.player.y += gameState.jumpVelocity;
+                    gameState.jumpVelocity -= 0.016;
+                    if(gameState.player.y <= 1.6) {
+                        gameState.player.y = 1.6;
+                        gameState.isJumping = false;
+                        gameState.jumpVelocity = 0;
+                        gameState.onGround = true;
+                    }
+                }
+            }
+
+            function fireFlare(color) {
+    if (gameState.flareActive) return;
+    gameState.flareActive = true;
+    
+    // 创建信号弹组
+    const flareGroup = new THREE.Group();
+    
+    // 发光球体
+    const ballMat = new THREE.MeshStandardMaterial({ 
+        color: color === 'red' ? 0xff3333 : 0x3333ff,
+        emissive: color === 'red' ? 0x440000 : 0x000044,
+        emissiveIntensity: 2.0
+    });
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16), ballMat);
+    ball.position.set(0, 0, 0);
+    flareGroup.add(ball);
+    
+    // 添加光源
+    const light = new THREE.PointLight(
+        color === 'red' ? 0xff3333 : 0x3333ff, 
+        2.0, 
+        30
+    );
+    light.position.set(0, 0, 0);
+    flareGroup.add(light);
+    
+    // 放置在玩家当前位置，但稍微抬高
+    flareGroup.position.set(
+        gameState.player.x,
+        gameState.player.y + 2.0,
+        gameState.player.z
+    );
+    
+    scene.add(flareGroup);
+    
+    // 动画：原地发光，不移动
+    let startTime = performance.now();
+    
+    function animateFlare() {
+        const elapsed = performance.now() - startTime;
+        
+        if (elapsed > 10000 || !gameState.flareActive) { // 10秒后消失
+            scene.remove(flareGroup);
+            gameState.flareActive = false;
+            return;
+        }
+        
+        // 脉动效果
+        const scale = 1.0 + Math.sin(elapsed * 0.01) * 0.2;
+        flareGroup.scale.set(scale, scale, scale);
+        
+        // 保持在原地不动
+        requestAnimationFrame(animateFlare);
+    }
+    
+    animateFlare();
+    
+    // 显示提示
+    document.getElementById('interactionHint').style.display = 'block';
+    document.getElementById('interactionHint').textContent = `🚨 ${color === 'red' ? '红色' : '蓝色'}信号弹已发射（持续10秒）`;
+    setTimeout(() => {
+        document.getElementById('interactionHint').style.display = 'none';
+    }, 3000);
+}
+
+            function useItem() {
+                if(gameState.isCaught || !gameState.isAlive || gameState.escaping) return;
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement) return;
+                const itemType = slotElement.textContent;
+                
+                if(itemType === '🧪' && gameState.almondWater > 0) {
+                    gameState.almondWater--;
+                    gameState.sanity = Math.min(100, gameState.sanity + 40);
+                    if (gameState.almondWater === 0 && gameState.activeSlot === activeSlot) {
+                        gameState.activeSlot = -1;
+                    }
+                    updateUI();
+                }
+                
+                if(itemType === '🔴' && gameState.painSoda > 0) {
+                    gameState.isAlive = false;
+                    startDeathSequence();
+                }
+                
+                if(itemType === '🔫' && gameState.signalGun > 0) {
+                    const color = Math.random() < 0.5 ? 'red' : 'green';
+                    fireFlare(color);
+                }
+            }
+
+            function dropItem() {
+                if(gameState.isCaught || !gameState.isAlive || gameState.escaping) return;
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement || !slotElement.classList.contains('has-item')) return;
+                const itemType = slotElement.textContent;
+                const dropX = gameState.player.x;
+                const dropZ = gameState.player.z;
+                
+                if (itemType === '🧪' && gameState.almondWater > 0) {
+                    gameState.almondWater--;
+                    createAlmondWater(dropX, dropZ);
+                }
+                else if (itemType === '🔴' && gameState.painSoda > 0) {
+                    gameState.painSoda--;
+                    createPainSoda(dropX, dropZ);
+                }
+                else if (itemType === '🔦' && gameState.flashlights > 0) {
+                    gameState.flashlights--;
+                    createFlashlightItem(dropX, dropZ);
+                }
+                else if (itemType === '📻' && gameState.radios > 0) {
+                    gameState.radios--;
+                    createRadio(dropX, dropZ);
+                }
+                else if (itemType === '🔧' && gameState.parts > 0) {
+                    return;
+                }
+                else if (itemType === '🔫' && gameState.signalGun > 0) {
+                    return;
+                }
+                
+                gameState.activeSlot = -1;
+                updateUI();
+            }
+
+            function interactHandler() {
+                if(!gameState.isAlive || gameState.isCaught || gameState.escaping) return;
+                
+                gameState.towers.forEach(tower => {
+                    if (tower.userData.pulled) return;
+                    const dist = Math.sqrt(
+                        (gameState.player.x - tower.position.x)**2 + 
+                        (gameState.player.z - tower.position.z)**2
+                    );
+                    if (dist < 5) {
+                        tower.userData.pulled = true;
+                        tower.userData.switchLever.rotation.x = -0.5;
+                        gameState.switches++;
+                        updateUI();
+                        if (gameState.switches === 6) {
+                            spawnParts();
+                        }
+                        return;
+                    }
+                });
+                
+                if (window.tractor) {
+                    const dist = Math.sqrt(
+                        (gameState.player.x - window.tractor.position.x)**2 + 
+                        (gameState.player.z - window.tractor.position.z)**2
+                    );
+                    if (dist < 5) {
+                        if (!gameState.tractorFixed && gameState.parts === 5) {
+                            gameState.tractorFixed = true;
+                            window.tractor.userData.fixed = true;
+                            document.getElementById('interactionHint').style.display = 'block';
+                            document.getElementById('interactionHint').textContent = '✅ 拖拉机已修复！点击手掌上车';
+                            setTimeout(() => {
+                                document.getElementById('interactionHint').style.display = 'none';
+                            }, 3000);
+                        }
+                        else if (gameState.tractorFixed) {
+                            gameState.escaping = true;
+                            gameState.escapeStartTime = performance.now();
+                            
+                            document.getElementById('controls').style.opacity = '0';
+                            document.getElementById('jumpBtn').style.opacity = '0';
+                            document.getElementById('interactBtn').style.opacity = '0';
+                            document.getElementById('useBtn').style.opacity = '0';
+                            document.getElementById('dropBtn').style.opacity = '0';
+                            
+                            const timerDiv = document.getElementById('escapedTimer');
+                            timerDiv.style.display = 'block';
+                            
+                            startEscapeAnimation();
+                        }
+                        return;
+                    }
+                }
+                
+                let foundItem = null, foundIdx = -1;
+                gameState.itemsList.forEach((item, index) => {
+                    const dist = Math.sqrt(
+                        (gameState.player.x - item.position.x)**2 + 
+                        (gameState.player.z - item.position.z)**2
+                    );
+                    if (dist < 2.5) {
+                        foundItem = item;
+                        foundIdx = index;
+                    }
+                });
+                
+                if (foundItem) {
+                    const type = foundItem.userData.type;
+                    if (type === 'almond') {
+                        gameState.almondWater++;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    }
+                    else if (type === 'pain') {
+                        gameState.painSoda++;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    }
+                    else if (type === 'flashlight') {
+                        gameState.flashlights++;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    }
+                    else if (type === 'radio') {
+                        gameState.radios++;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    }
+                    else if (type === 'signalGun' && gameState.signalGun === 0) {
+                        gameState.signalGun = 1;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    }
+                    else if (type === 'part' && gameState.partsUnlocked) {
+                        gameState.parts++;
+                        scene.remove(foundItem);
+                        gameState.itemsList.splice(foundIdx,1);
+                        updateUI();
+                    }
+                }
+            }
+
+            function startEscapeAnimation() {
+                const startPos = { x: gameState.player.x, z: gameState.player.z };
+                const targetPos = { x: 300, z: 300 };
+                const startTime = performance.now();
+                const duration = 20000;
+                
+                function animateEscape() {
+                    const now = performance.now();
+                    const elapsed = now - startTime;
+                    const progress = Math.min(1, elapsed / duration);
+                    
+                    const secondsLeft = Math.ceil((duration - elapsed) / 1000);
+                    document.getElementById('escapedTimer').textContent = secondsLeft;
+                    
+                    gameState.player.x = startPos.x + (targetPos.x - startPos.x) * progress;
+                    gameState.player.z = startPos.z + (targetPos.z - startPos.z) * progress;
+                    
+                    camera.position.y = 1.8 + Math.sin(now * 0.01) * 0.1;
+                    camera.rotation.z = Math.sin(now * 0.005) * 0.05;
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animateEscape);
+                    } else {
+                        document.getElementById('winMessage').style.display = 'block';
+                        parent.postMessage({ type: 'levelComplete' }, '*');
+                        document.getElementById('escapedTimer').style.display = 'none';
+                    }
+                }
+                animateEscape();
+            }
+
+            function initDevTools() {
+                const devTButton = document.getElementById('devTButton');
+                devTButton.addEventListener('click', () => {
+                    const cmd = prompt('开发者命令:\n\ngive almond - 杏仁水\ngive flashlight - 手电筒\ngive radio - 对讲机\ngive gun - 信号枪\ncomplete - 直接胜利');
+                    if (cmd === 'give almond') {
+                        gameState.almondWater++; updateUI();
+                    } else if (cmd === 'give flashlight') {
+                        gameState.flashlights++; updateUI();
+                    } else if (cmd === 'give radio') {
+                        gameState.radios++; updateUI();
+                    } else if (cmd === 'give gun') {
+                        gameState.signalGun = 1; updateUI();
+                    } else if (cmd === 'complete') {
+                        gameState.switches = 6;
+                        gameState.partsUnlocked = true;
+                        gameState.parts = 5;
+                        updateUI();
+                    } else if (cmd) {
+                        alert('未知命令');
+                    }
+                });
+            }
+            
+            const deathOverlay = document.getElementById('deathOverlay');
+            function startDeathSequence() {
+                deathOverlay.style.display = 'block';
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+
+            const touchArea = document.getElementById('touchArea');
+            let lastX = 0;
+            touchArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+            touchArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - lastX;
+                gameState.rotationY -= dx * 0.01;
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+            settingsBtn.onclick = () => {
+                settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+            };
+            document.getElementById('closeSettingsBtn').onclick = () => {
+                settingsPanel.style.display = 'none';
+            };
+
+            document.getElementById('qualityLow').addEventListener('click', function() { applyQualitySettings('low'); });
+            document.getElementById('qualityMid').addEventListener('click', function() { applyQualitySettings('mid'); });
+            document.getElementById('qualityHigh').addEventListener('click', function() { applyQualitySettings('high'); });
+
+            const keys = { w: false, s: false, a: false, d: false };
+            
+            document.addEventListener('keydown', (e) => {
+                if(gameState.isCaught || gameState.escaping) return;
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = true;
+                    e.preventDefault();
+                } else if(k === ' ') {
+                    handleJump();
+                    e.preventDefault();
+                }
+            });
+            document.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = false;
+                    e.preventDefault();
+                }
+            });
+
+            document.getElementById('forwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.escaping) keys.w = true; });
+            document.getElementById('forwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.w = false; });
+            document.getElementById('backwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.escaping) keys.s = true; });
+            document.getElementById('backwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.s = false; });
+            document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.escaping) keys.a = true; });
+            document.getElementById('leftBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.a = false; });
+            document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.escaping) keys.d = true; });
+            document.getElementById('rightBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.d = false; });
+            
+            document.getElementById('jumpBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleJump(); });
+            document.getElementById('interactBtn').addEventListener('click', interactHandler);
+            document.getElementById('interactBtn').addEventListener('touchstart', (e) => { e.preventDefault(); interactHandler(); });
+            document.getElementById('useBtn').addEventListener('click', useItem);
+            document.getElementById('useBtn').addEventListener('touchstart', (e) => { e.preventDefault(); useItem(); });
+            document.getElementById('dropBtn').addEventListener('click', dropItem);
+            document.getElementById('dropBtn').addEventListener('touchstart', (e) => { e.preventDefault(); dropItem(); });
+            document.getElementById('flashlightToggleBtn').addEventListener('click', () => {
+                if(gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlights > 0) {
+                    gameState.flashlightOn = !gameState.flashlightOn;
+                }
+                updateUI();
+            });
+            
+            document.querySelectorAll('.inventory-slot').forEach((slot, idx) => {
+                slot.addEventListener('click', () => {
+                    if(slot.classList.contains('has-item')) {
+                        document.querySelectorAll('.inventory-slot').forEach(s => s.classList.remove('active'));
+                        slot.classList.add('active');
+                        gameState.activeSlot = idx;
+                    }
+                    updateUI();
+                });
+            });
+
+            let lastTime = performance.now();
+            let catchStartTime = 0;
+            
+            function updatePlayer() {
+                const now = performance.now();
+                const deltaTime = Math.min(0.1, (now - lastTime) / 1000);
+                lastTime = now;
+                
+                if(!gameState.isAlive) return;
+                
+                if(gameState.flashlightOn && gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlights > 0) {
+                    flashlight.visible = true;
+                    flashlight.position.copy(camera.position);
+                    flashlightTarget.position.set(
+                        camera.position.x - Math.sin(gameState.rotationY) * 15,
+                        camera.position.y - 0.2,
+                        camera.position.z - Math.cos(gameState.rotationY) * 15
+                    );
+                } else {
+                    flashlight.visible = false;
+                }
+                
+                if (gameState.escaping) return;
+                
+                if(gameState.isCaught) {
+                    if(catchStartTime === 0) catchStartTime = now;
+                    if(now - catchStartTime >= 1000) startDeathSequence();
+                    return;
+                }
+                
+                updateJump();
+                
+                const speed = 0.25;
+                let nx = gameState.player.x;
+                let nz = gameState.player.z;
+                
+                if(keys.w) { nx -= Math.sin(gameState.rotationY) * speed; nz -= Math.cos(gameState.rotationY) * speed; }
+                if(keys.s) { nx += Math.sin(gameState.rotationY) * speed; nz += Math.cos(gameState.rotationY) * speed; }
+                if(keys.a) { nx -= Math.cos(gameState.rotationY) * speed; nz += Math.sin(gameState.rotationY) * speed; }
+                if(keys.d) { nx += Math.cos(gameState.rotationY) * speed; nz -= Math.sin(gameState.rotationY) * speed; }
+                
+                if(!checkCollision(nx, gameState.player.z)) gameState.player.x = nx;
+                if(!checkCollision(gameState.player.x, nz)) gameState.player.z = nz;
+                
+                const bodyOffset = 2.0;
+                playerBody.position.set(
+                    gameState.player.x + Math.sin(gameState.rotationY) * bodyOffset,
+                    gameState.player.y - 0.8,
+                    gameState.player.z + Math.cos(gameState.rotationY) * bodyOffset
+                );
+                playerBody.rotation.y = gameState.rotationY;
+                
+                camera.position.set(gameState.player.x, gameState.player.y + 0.2, gameState.player.z + 2);
+                camera.rotation.set(0, gameState.rotationY, 0);
+                
+                const s = gameState.scarecrow;
+                if (s) {
+                    const dx = gameState.player.x - s.position.x;
+                    const dz = gameState.player.z - s.position.z;
+                    const dist = Math.sqrt(dx*dx + dz*dz);
+                    
+                    s.lookAt(gameState.player.x, 1.8, gameState.player.z);
+                    
+                    const angleToPlayer = Math.atan2(dx, dz);
+                    const playerAngle = gameState.rotationY;
+                    const angleDiff = Math.abs(angleToPlayer - playerAngle);
+                    const lookingAt = angleDiff < 1.0;
+                    
+                    if (lookingAt && dist < 25 && s.userData.visible) {
+    // 立即消失
+    s.visible = false;
+    s.userData.visible = false;
+    s.userData.lastSeenTime = now;
+    
+    // 1秒后在随机位置重新出现
+    setTimeout(() => {
+        if (gameState.scarecrow) { // 确保稻草人还存在
+            let newX, newZ;
+            do {
+                newX = (Math.random() - 0.5) * 250;
+                newZ = (Math.random() - 0.5) * 250;
+            } while (Math.abs(newX - gameState.player.x) < 30 && Math.abs(newZ - gameState.player.z) < 30);
+            
+            s.position.set(newX, 0.5, newZ);
+            s.visible = true;
+            s.userData.visible = true;
+        }
+    }, 1500); // 1.5秒后重新出现
+}
+                    } else if (s.userData.visible) {
+                        if (dist > 2.5) {
+                            let moveX = (dx/dist) * 0.18;
+                            let moveZ = (dz/dist) * 0.18;
+                            
+                            let newX = s.position.x + moveX;
+                            let newZ = s.position.z + moveZ;
+                            
+                            if (Math.abs(newX) < 140) s.position.x = newX;
+                            if (Math.abs(newZ) < 140) s.position.z = newZ;
+                        }
+                        
+                        if (dist < 3.0 && !gameState.isCaught) {
+                            gameState.isCaught = true;
+                            catchStartTime = now;
+                        }
+                        
+                        if (dist < 15) {
+                            gameState.sanity -= gameState.sanityDrainRate * deltaTime * 5;
+                        }
+                    }
+                }
+                
+                gameState.sanity = Math.max(0, Math.min(100, gameState.sanity));
+                if(gameState.sanity <= 0) {
+                    gameState.isAlive = false;
+                    startDeathSequence();
+                }
+                
+                document.getElementById('monsterStatus').textContent = 
+                    (gameState.scarecrow && gameState.scarecrow.userData.visible) ? '👻 稻草人追击' : '👾 稻草人消失';
+                
+                gameState.nearItem = null;
+                gameState.nearSwitch = false;
+                
+                const px = gameState.player.x;
+                const pz = gameState.player.z;
+                
+                gameState.itemsList.forEach(item => {
+                    if (item.position && Math.hypot(px - item.position.x, pz - item.position.z) < 2.5) {
+                        gameState.nearItem = item;
+                    }
+                });
+                
+                gameState.towers.forEach(tower => {
+                    if (!tower.userData.pulled && Math.hypot(px - tower.position.x, pz - tower.position.z) < 5) {
+                        gameState.nearSwitch = true;
+                    }
+                });
+                
+                if (window.tractor) {
+                    const dist = Math.hypot(px - window.tractor.position.x, pz - window.tractor.position.z);
+                    gameState.nearTractor = dist < 5;
+                }
+                
+                let hintText = '';
+                if (gameState.nearSwitch) hintText = '⚡ 拉下电闸';
+                else if (gameState.nearTractor) {
+                    if (!gameState.tractorFixed && gameState.parts === 5) hintText = '🔧 拖拉机已修复（点击交互）';
+                    else if (!gameState.tractorFixed) hintText = '🚜 需要5个零件修复拖拉机';
+                    else hintText = '🚜 上车逃离';
+                } else if (gameState.nearItem) {
+                    const type = gameState.nearItem.userData.type;
+                    if (type === 'almond') hintText = '🧪 捡起杏仁水';
+                    else if (type === 'pain') hintText = '🥤 捡起饮料';
+                    else if (type === 'flashlight') hintText = '🔦 捡起手电筒';
+                    else if (type === 'radio') hintText = '📻 捡起对讲机';
+                    else if (type === 'signalGun') hintText = '🔫 捡起信号枪';
+                    else if (type === 'part') hintText = '🔧 捡起零件';
+                }
+                
+                document.getElementById('interactionHint').style.display = hintText ? 'block' : 'none';
+                document.getElementById('interactionHint').textContent = hintText || '🔍';
+                
+                updateUI();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                updatePlayer();
+                renderer.render(scene, camera);
+            }
+
+            buildScene();
+            gameState.player.x = 10;
+            gameState.player.z = 10;
+            updateUI();
+            initDevTools();
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        })();
+    </script>
+</body>
+</html>
