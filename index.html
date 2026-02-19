@@ -1106,14 +1106,21 @@
         });
         
         peer.on('open', (id) => {
+            console.log('私有服务器创建成功，Peer ID:', id);
             gameState.multiplayer.roomId = id;
             gameState.multiplayer.localPlayerId = id;
             gameState.multiplayer.peer = peer;
 
-            // 显示房间ID模态框
-            showRoomIdModal(id, roomName, password);
+            // 显示房间ID模态框（添加错误处理）
+            try {
+                showRoomIdModal(id, roomName, password);
+            } catch (e) {
+                console.error('显示房间ID模态框失败:', e);
+                alert('房间创建成功，但显示ID失败。你的房间ID是: ' + id);
+            }
 
             peer.on('connection', (conn) => {
+                console.log('收到新连接');
                 // 验证密码
                 conn.on('data', (data) => {
                     if (data.type === 'auth') {
@@ -1128,7 +1135,12 @@
                                 msg: `${data.playerName} 加入了房间`
                             };
                             gameState.multiplayer.connections.forEach(c => c.send(joinMsg));
-                            addSystemMessage(`${data.playerName} 加入了房间`);
+                            // 添加系统消息函数调用
+                            if (typeof addSystemMessage === 'function') {
+                                addSystemMessage(`${data.playerName} 加入了房间`);
+                            } else {
+                                console.log(`${data.playerName} 加入了房间`);
+                            }
                         } else {
                             conn.send({ type: 'auth_fail' });
                             conn.close();
@@ -1137,12 +1149,14 @@
                 });
             });
 
+            // 确保游戏启动
+            console.log('准备启动多人游戏');
             startMultiplayerGame();
         });
 
         peer.on('error', (err) => {
-            alert('连接服务器失败，请检查网络后重试');
-            console.error('Peer error:', err);
+            console.error('PeerJS 错误:', err);
+            alert('连接服务器失败，请检查网络后重试。错误信息: ' + err.message);
             showStartScreen();
         });
     });
@@ -1315,6 +1329,12 @@
         // sysMsg.innerHTML = '<i>--- 对话已清空 ---</i>';
         // chatMessages.appendChild(sysMsg);
     }, 20000); // 20000毫秒 = 20秒
+}
+function addSystemMessage(msg) {
+    const div = document.createElement('div');
+    div.innerHTML = `<i style="color: #666;">${escapeHtml(msg)}</i>`;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
             // ---------- 事件绑定 ----------
