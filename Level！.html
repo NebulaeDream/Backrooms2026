@@ -1541,8 +1541,9 @@ function createPlayerBody() {
     rightLeg.position.set(0.25, -0.3, 0);
     group.add(rightLeg);
     
-    // 确保大小和本地角色一致（如果需要，可以设置scale）
-    // group.scale.set(1, 1, 1);
+    // 调整整体大小：让玩家比电线人矮
+    // 电线人大概高 4-5，玩家应该矮一些，用 0.8 倍大小试试
+    group.scale.set(0.8, 0.8, 0.8);
     
     // 修复朝向：旋转180度，让面具朝前
     group.rotation.y = Math.PI;
