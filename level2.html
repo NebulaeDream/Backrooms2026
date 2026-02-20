@@ -1549,20 +1549,20 @@ window.addEventListener('message', (event) => {
     }
     // 收到其他玩家的位置
     else if (data.type === 'remotePlayerPosition') {
-        const id = data.playerId;
-        if (!remotePlayers[id]) {
-            // 创建其他玩家的身体（和你自己一模一样的黄色身体）
-            const remoteBody = createPlayerBody();
-            remoteBody.position.set(data.position.x, data.position.y, data.position.z);
-            remoteBody.rotation.y = data.rotation;
-            scene.add(remoteBody);
-            remotePlayers[id] = remoteBody;
-        } else {
-            // 更新位置和旋转
-            remotePlayers[id].position.set(data.position.x, data.position.y, data.position.z);
-            remotePlayers[id].rotation.y = data.rotation;
-        }
+    const id = data.playerId;
+    if (!remotePlayers[id]) {
+        const remoteBody = createPlayerBody();
+        // 位置修正：本地玩家眼睛高度1.6，身体原点在眼睛下方0.8，所以远程身体Y需要减0.8
+        remoteBody.position.set(data.position.x, data.position.y - 0.8, data.position.z);
+        // 旋转修正：加上180度，使模型正面指向相机视线方向
+        remoteBody.rotation.y = data.rotation + Math.PI;
+        scene.add(remoteBody);
+        remotePlayers[id] = remoteBody;
+    } else {
+        remotePlayers[id].position.set(data.position.x, data.position.y - 0.8, data.position.z);
+        remotePlayers[id].rotation.y = data.rotation + Math.PI;
     }
+}
     // 移除离开的玩家
     else if (data.type === 'removeRemotePlayer') {
         const id = data.playerId;
@@ -1612,11 +1612,10 @@ function createPlayerBody() {
     rightLeg.position.set(0.25, -0.3, 0);
     group.add(rightLeg);
     
-    // 调整整体大小：让玩家比电线人矮
-    // 电线人大概高 4-5，玩家应该矮一些，用 0.8 倍大小试试
-    group.scale.set(0.8, 0.8, 0.8);
+    // 整体缩小2倍
+    group.scale.set(0.5, 0.5, 0.5);
     
-    // 修复朝向：旋转180度，让面具朝前
+    // 旋转180度，让模型的正面指向 -z（与相机视线一致）
     group.rotation.y = Math.PI;
     
     return group;
