@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Backroom 2026 1.0</title>
     <style>
-        /* ==================== 完全保留之前的样式 ==================== */
+        /* ==================== 你的原有样式，一字未改 ==================== */
         * {
             margin: 0;
             padding: 0;
@@ -543,7 +543,7 @@
         <div class="modal-content">
             <h3>创建私有服务器</h3>
             <input type="text" id="private-room-name" placeholder="房间名称" maxlength="20">
-            <input type="password" id="private-password" placeholder="密码">
+            <input type="password" id="private-password" placeholder="密码（字母数字）" maxlength="20">
             <button id="confirm-create-private">创建</button>
             <button class="cancel-btn" id="cancel-create-private">取消</button>
         </div>
@@ -575,15 +575,14 @@
     </div>
 </div>
 
-<!-- 新增：房间ID显示模态框 -->
+<!-- 新增：房间ID显示模态框（现在显示的是密码） -->
 <div id="room-id-modal" class="modal">
     <div class="modal-content">
         <h3>🎮 房间创建成功</h3>
         <p style="margin: 1rem 0;">房间名称: <strong id="display-room-name"></strong></p>
-        <p>房间ID: <strong id="display-room-id" style="font-size: 1.5rem; color: #aa2222;"></strong></p>
-        <p style="margin: 1rem 0;">密码: <strong id="display-room-pwd"></strong></p>
-        <p style="font-size: 0.9rem; color: #333;">把这个ID和密码告诉你的朋友</p>
-        <button id="copy-room-id" style="background: #2266aa; width: 100%; padding: 1rem; margin-bottom: 0.5rem;">复制ID</button>
+        <p>密码: <strong id="display-room-pwd" style="font-size: 1.5rem; color: #aa2222;"></strong></p>
+        <p style="font-size: 0.9rem; color: #333;">把这个密码告诉你的朋友</p>
+        <button id="copy-room-pwd" style="background: #2266aa; width: 100%; padding: 1rem; margin-bottom: 0.5rem;">复制密码</button>
         <button class="cancel-btn" id="close-room-modal" style="width: 100%;">确定</button>
     </div>
 </div>
@@ -728,29 +727,59 @@
                 cancelId.addEventListener('click', onCancel);
             }
 
+            // ---------- 显示密码模态框（修改版，只显示密码）----------
+            function showPasswordModal(roomName, password) {
+                const displayRoomName = document.getElementById('display-room-name');
+                const displayRoomPwd = document.getElementById('display-room-pwd');
+                const roomIdModal = document.getElementById('room-id-modal');
+                const copyPwd = document.getElementById('copy-room-pwd');
+                const closeModal = document.getElementById('close-room-modal');
+
+                if (!password) {
+                    alert('房间创建失败，未获取到密码');
+                    return;
+                }
+
+                displayRoomName.textContent = roomName || '未命名';
+                displayRoomPwd.textContent = password;
+                roomIdModal.style.display = 'flex';
+
+                copyPwd.onclick = function() {
+                    navigator.clipboard.writeText(password).then(() => {
+                        alert('密码已复制！');
+                    }).catch(() => {
+                        alert('复制失败，请手动复制');
+                    });
+                };
+
+                closeModal.onclick = function() {
+                    roomIdModal.style.display = 'none';
+                };
+            }
+
             // ---------- 单人游戏存档 ----------
             function getSaves() {
                 return JSON.parse(localStorage.getItem('backroom_saves') || '[]');
             }
 
             function saveGame(name, levelIndex) {
-    const saves = getSaves();
-    const existing = saves.find(s => s.name === name);
-    const levelName = LEVELS[levelIndex] || 'Unknown';
-    if (existing) {
-        existing.level = levelName;
-        existing.levelIndex = levelIndex;  // 确保这里保存的是数字索引
-        existing.time = Date.now();
-    } else {
-        saves.push({ 
-            name, 
-            level: levelName, 
-            levelIndex: levelIndex,  // 新存档也要保存数字索引
-            time: Date.now() 
-        });
-    }
-    localStorage.setItem('backroom_saves', JSON.stringify(saves));
-}
+                const saves = getSaves();
+                const existing = saves.find(s => s.name === name);
+                const levelName = LEVELS[levelIndex] || 'Unknown';
+                if (existing) {
+                    existing.level = levelName;
+                    existing.levelIndex = levelIndex;
+                    existing.time = Date.now();
+                } else {
+                    saves.push({ 
+                        name, 
+                        level: levelName, 
+                        levelIndex: levelIndex,
+                        time: Date.now() 
+                    });
+                }
+                localStorage.setItem('backroom_saves', JSON.stringify(saves));
+            }
 
             function deleteSave(name) {
                 const saves = getSaves();
@@ -844,13 +873,12 @@
             }
 
             function startMultiplayerGame() {
-    gameState.currentGameType = 'multi';
-    hideAllPanels();
-    gameContainer.style.display = 'block';
-    chatContainer.style.display = 'flex';
-    // 多人游戏从第一关开始
-    loadLevel(0);
-}
+                gameState.currentGameType = 'multi';
+                hideAllPanels();
+                gameContainer.style.display = 'block';
+                chatContainer.style.display = 'flex';
+                loadLevel(0);
+            }
 
             function loadLevel(index) {
                 if (index >= LEVELS.length) {
@@ -869,12 +897,12 @@
 
                 switch (data.type) {
                     case 'levelComplete':
-    gameState.currentLevelIndex++;
-    if (gameState.currentGameType === 'single' && gameState.currentSaveName) {
-        saveGame(gameState.currentSaveName, gameState.currentLevelIndex); // 添加这行
-    }
-    loadLevel(gameState.currentLevelIndex);
-    break;
+                        gameState.currentLevelIndex++;
+                        if (gameState.currentGameType === 'single' && gameState.currentSaveName) {
+                            saveGame(gameState.currentSaveName, gameState.currentLevelIndex);
+                        }
+                        loadLevel(gameState.currentLevelIndex);
+                        break;
                     case 'playerDeath':
                         deathOverlay.style.display = 'block';
                         setTimeout(() => {
@@ -885,7 +913,7 @@
                 }
             });
 
-            // ---------- 多人网络（简化版，使用内存模拟公开服务器）----------
+            // ---------- 多人网络（公开房间，内存模拟）----------
             function updatePublicServerList() {
                 publicServerList.innerHTML = '';
                 for (let roomId in gameState.multiplayer.publicRooms) {
@@ -907,374 +935,362 @@
             }
 
             function joinPublicRoom(roomId, room) {
-    showIdModal((playerName) => {
-        gameState.multiplayer.isHost = false;
-        gameState.multiplayer.roomId = roomId;
-        gameState.multiplayer.roomName = room.name;
-        gameState.multiplayer.isPrivate = false;
-        gameState.multiplayer.playerName = playerName;
+                showIdModal((playerName) => {
+                    gameState.multiplayer.isHost = false;
+                    gameState.multiplayer.roomId = roomId;
+                    gameState.multiplayer.roomName = room.name;
+                    gameState.multiplayer.isPrivate = false;
+                    gameState.multiplayer.playerName = playerName;
 
-        // 同样使用 STUN+TURN 配置
-        const peer = new Peer({
-            config: {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    {
-                        urls: 'turn:turn.ztun.org:3478',
-                        username: 'free',
-                        credential: 'free'
-                    },
-                    {
-                        urls: 'turn:turn.ztun.org:3478?transport=tcp',
-                        username: 'free',
-                        credential: 'free'
-                    }
-                ]
+                    const peer = new Peer({
+                        config: {
+                            'iceServers': [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' },
+                                { urls: 'stun:stun2.l.google.com:19302' },
+                                { urls: 'stun:stun3.l.google.com:19302' },
+                                { urls: 'stun:stun4.l.google.com:19302' },
+                                {
+                                    urls: 'turn:turn.ztun.org:3478',
+                                    username: 'free',
+                                    credential: 'free'
+                                },
+                                {
+                                    urls: 'turn:turn.ztun.org:3478?transport=tcp',
+                                    username: 'free',
+                                    credential: 'free'
+                                }
+                            ]
+                        }
+                    });
+                    
+                    peer.on('open', (id) => {
+                        gameState.multiplayer.localPlayerId = id;
+                        
+                        const connectingDiv = document.createElement('div');
+                        connectingDiv.id = 'connecting-toast';
+                        connectingDiv.style.cssText = `
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background: black;
+                            color: white;
+                            padding: 1rem 2rem;
+                            border-radius: 2rem;
+                            z-index: 3000;
+                        `;
+                        connectingDiv.textContent = '正在连接房间...';
+                        document.body.appendChild(connectingDiv);
+
+                        const conn = peer.connect(roomId, {
+                            reliable: true,
+                            serialization: 'json',
+                            metadata: { playerName: playerName }
+                        });
+
+                        const timeout = setTimeout(() => {
+                            document.body.removeChild(connectingDiv);
+                            alert('连接超时，请稍后重试');
+                            peer.destroy();
+                        }, 10000);
+
+                        conn.on('open', () => {
+                            clearTimeout(timeout);
+                            document.body.removeChild(connectingDiv);
+                            
+                            gameState.multiplayer.connections = [conn];
+                            gameState.multiplayer.peer = peer;
+                            setupConnection(conn);
+                            startMultiplayerGame();
+                        });
+
+                        conn.on('error', (err) => {
+                            clearTimeout(timeout);
+                            document.body.removeChild(connectingDiv);
+                            alert('连接失败：' + err.message);
+                            peer.destroy();
+                        });
+                    });
+
+                    peer.on('error', (err) => {
+                        alert('连接失败：' + err.message);
+                        console.error('Peer error:', err);
+                        showStartScreen();
+                    });
+                });
             }
-        });
-        
-        peer.on('open', (id) => {
-            gameState.multiplayer.localPlayerId = id;
-            
-            // 显示连接中提示
-            const connectingDiv = document.createElement('div');
-            connectingDiv.id = 'connecting-toast';
-            connectingDiv.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: black;
-                color: white;
-                padding: 1rem 2rem;
-                border-radius: 2rem;
-                z-index: 3000;
-            `;
-            connectingDiv.textContent = '正在连接房间...';
-            document.body.appendChild(connectingDiv);
-
-            // 连接时带上玩家名作为metadata
-            const conn = peer.connect(roomId, {
-                reliable: true,
-                serialization: 'json',
-                metadata: { playerName: playerName }
-            });
-
-            const timeout = setTimeout(() => {
-                document.body.removeChild(connectingDiv);
-                alert('连接超时，请稍后重试');
-                peer.destroy();
-            }, 10000);
-
-            conn.on('open', () => {
-                clearTimeout(timeout);
-                document.body.removeChild(connectingDiv);
-                
-                gameState.multiplayer.connections = [conn];
-                gameState.multiplayer.peer = peer;
-                setupConnection(conn);
-                startMultiplayerGame();
-            });
-
-            conn.on('error', (err) => {
-                clearTimeout(timeout);
-                document.body.removeChild(connectingDiv);
-                alert('连接失败：' + err.message);
-                peer.destroy();
-            });
-        });
-
-        peer.on('error', (err) => {
-            alert('连接失败：' + err.message);
-            console.error('Peer error:', err);
-            showStartScreen();
-        });
-    });
-}
 
             function createPublicRoom(roomName) {
-    showIdModal((playerName) => {
-        gameState.multiplayer.isHost = true;
-        gameState.multiplayer.roomName = roomName;
-        gameState.multiplayer.isPrivate = false;
-        gameState.multiplayer.playerName = playerName;
+                showIdModal((playerName) => {
+                    gameState.multiplayer.isHost = true;
+                    gameState.multiplayer.roomName = roomName;
+                    gameState.multiplayer.isPrivate = false;
+                    gameState.multiplayer.playerName = playerName;
 
-        // 使用 STUN+TURN 配置，确保跨互联网连接
-        const peer = new Peer({
-            config: {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    {
-                        urls: 'turn:turn.ztun.org:3478',
-                        username: 'free',
-                        credential: 'free'
-                    },
-                    {
-                        urls: 'turn:turn.ztun.org:3478?transport=tcp',
-                        username: 'free',
-                        credential: 'free'
-                    }
-                ]
-            }
-        });
-        
-        peer.on('open', (id) => {
-            gameState.multiplayer.roomId = id;
-            gameState.multiplayer.localPlayerId = id;
-            gameState.multiplayer.peer = peer;
+                    const peer = new Peer({
+                        config: {
+                            'iceServers': [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' },
+                                { urls: 'stun:stun2.l.google.com:19302' },
+                                { urls: 'stun:stun3.l.google.com:19302' },
+                                { urls: 'stun:stun4.l.google.com:19302' },
+                                {
+                                    urls: 'turn:turn.ztun.org:3478',
+                                    username: 'free',
+                                    credential: 'free'
+                                },
+                                {
+                                    urls: 'turn:turn.ztun.org:3478?transport=tcp',
+                                    username: 'free',
+                                    credential: 'free'
+                                }
+                            ]
+                        }
+                    });
+                    
+                    peer.on('open', (id) => {
+                        gameState.multiplayer.roomId = id;
+                        gameState.multiplayer.localPlayerId = id;
+                        gameState.multiplayer.peer = peer;
 
-            // 添加到公开列表
-            gameState.multiplayer.publicRooms[id] = {
-                name: roomName,
-                hostId: id,
-                playerCount: 1
-            };
-            updatePublicServerList();
+                        gameState.multiplayer.publicRooms[id] = {
+                            name: roomName,
+                            hostId: id,
+                            playerCount: 1
+                        };
+                        updatePublicServerList();
 
-            // 监听新连接
-            peer.on('connection', (conn) => {
-                gameState.multiplayer.connections.push(conn);
-                setupConnection(conn);
-                
-                // 更新人数
-                gameState.multiplayer.publicRooms[id].playerCount = 
-                    gameState.multiplayer.connections.length + 1;
-                updatePublicServerList();
-
-                // 发送欢迎消息
-                const welcomeMsg = {
-                    type: 'system',
-                    msg: `${conn.metadata?.playerName || '新玩家'} 加入了房间`
-                };
-                gameState.multiplayer.connections.forEach(c => c.send(welcomeMsg));
-            });
-
-            startMultiplayerGame();
-        });
-
-        peer.on('error', (err) => {
-            alert('创建房间失败：' + err.message);
-            console.error('Peer error:', err);
-            showStartScreen();
-        });
-    });
-}
-
-            function createPrivateRoom(roomName, password) {
-    showIdModal((playerName) => {
-        gameState.multiplayer.isHost = true;
-        gameState.multiplayer.roomName = roomName;
-        gameState.multiplayer.isPrivate = true;
-        gameState.multiplayer.password = password;
-        gameState.multiplayer.playerName = playerName;
-
-        // 配置 STUN + TURN 服务器，实现跨互联网联机
-        const peer = new Peer({
-            config: {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    // 免费公共 TURN 服务器，用于数据转发
-                    {
-                        urls: 'turn:turn.ztun.org:3478',
-                        username: 'free',
-                        credential: 'free'
-                    },
-                    {
-                        urls: 'turn:turn.ztun.org:3478?transport=tcp',
-                        username: 'free',
-                        credential: 'free'
-                    },
-                    {
-                        urls: 'turns:turn.ztun.org:5349',
-                        username: 'free',
-                        credential: 'free'
-                    }
-                ]
-            }
-        });
-        
-        peer.on('open', (id) => {
-            console.log('私有服务器创建成功，Peer ID:', id);
-            gameState.multiplayer.roomId = id;
-            gameState.multiplayer.localPlayerId = id;
-            gameState.multiplayer.peer = peer;
-
-            // 显示房间ID模态框（添加错误处理）
-            try {
-                showRoomIdModal(id, roomName, password);
-            } catch (e) {
-                console.error('显示房间ID模态框失败:', e);
-                alert('房间创建成功，但显示ID失败。你的房间ID是: ' + id);
-            }
-
-            peer.on('connection', (conn) => {
-                console.log('收到新连接');
-                // 验证密码
-                conn.on('data', (data) => {
-                    if (data.type === 'auth') {
-                        if (data.password === password) {
-                            conn.send({ type: 'auth_success' });
+                        peer.on('connection', (conn) => {
                             gameState.multiplayer.connections.push(conn);
                             setupConnection(conn);
                             
-                            // 通知所有玩家有新玩家加入
-                            const joinMsg = {
+                            gameState.multiplayer.publicRooms[id].playerCount = 
+                                gameState.multiplayer.connections.length + 1;
+                            updatePublicServerList();
+
+                            const welcomeMsg = {
                                 type: 'system',
-                                msg: `${data.playerName} 加入了房间`
+                                msg: `${conn.metadata?.playerName || '新玩家'} 加入了房间`
                             };
-                            gameState.multiplayer.connections.forEach(c => c.send(joinMsg));
-                            // 添加系统消息函数调用
-                            if (typeof addSystemMessage === 'function') {
-                                addSystemMessage(`${data.playerName} 加入了房间`);
-                            } else {
-                                console.log(`${data.playerName} 加入了房间`);
-                            }
-                        } else {
-                            conn.send({ type: 'auth_fail' });
-                            conn.close();
-                        }
-                    }
+                            gameState.multiplayer.connections.forEach(c => c.send(welcomeMsg));
+                        });
+
+                        startMultiplayerGame();
+                    });
+
+                    peer.on('error', (err) => {
+                        alert('创建房间失败：' + err.message);
+                        console.error('Peer error:', err);
+                        showStartScreen();
+                    });
                 });
-            });
+            }
 
-            // 确保游戏启动
-            console.log('准备启动多人游戏');
-            startMultiplayerGame();
-        });
+            // ========== 修改后的私有房间（只用密码）==========
+            function createPrivateRoom(roomName, password) {
+                // 验证密码格式：只能包含字母、数字、-、_
+                if (!/^[A-Za-z0-9_-]+$/.test(password)) {
+                    alert('密码只能包含字母、数字、短横线(-)和下划线(_)');
+                    return;
+                }
 
-        peer.on('error', (err) => {
-            console.error('PeerJS 错误:', err);
-            alert('连接服务器失败，请检查网络后重试。错误信息: ' + err.message);
-            showStartScreen();
-        });
-    });
-}
+                showIdModal((playerName) => {
+                    gameState.multiplayer.isHost = true;
+                    gameState.multiplayer.roomName = roomName;
+                    gameState.multiplayer.isPrivate = true;
+                    gameState.multiplayer.password = password;
+                    gameState.multiplayer.playerName = playerName;
+
+                    // 使用密码作为 Peer ID
+                    const peer = new Peer(password, {
+                        config: {
+                            'iceServers': [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' },
+                                { urls: 'stun:stun2.l.google.com:19302' },
+                                { urls: 'stun:stun3.l.google.com:19302' },
+                                { urls: 'stun:stun4.l.google.com:19302' },
+                                {
+                                    urls: 'turn:turn.ztun.org:3478',
+                                    username: 'free',
+                                    credential: 'free'
+                                },
+                                {
+                                    urls: 'turn:turn.ztun.org:3478?transport=tcp',
+                                    username: 'free',
+                                    credential: 'free'
+                                },
+                                {
+                                    urls: 'turns:turn.ztun.org:5349',
+                                    username: 'free',
+                                    credential: 'free'
+                                }
+                            ]
+                        }
+                    });
+
+                    peer.on('open', (id) => {
+                        console.log('私有服务器创建成功，密码作为ID:', id);
+                        gameState.multiplayer.roomId = id;
+                        gameState.multiplayer.localPlayerId = id;
+                        gameState.multiplayer.peer = peer;
+
+                        // 显示密码弹窗
+                        showPasswordModal(roomName, password);
+
+                        peer.on('connection', (conn) => {
+                            console.log('收到新连接');
+                            conn.on('data', (data) => {
+                                if (data.type === 'auth') {
+                                    // 密码验证：由于ID本身就是密码，这里可以简化，但保留验证确保密码一致
+                                    if (data.password === password) {
+                                        conn.send({ type: 'auth_success' });
+                                        gameState.multiplayer.connections.push(conn);
+                                        setupConnection(conn);
+                                        
+                                        const joinMsg = {
+                                            type: 'system',
+                                            msg: `${data.playerName} 加入了房间`
+                                        };
+                                        gameState.multiplayer.connections.forEach(c => c.send(joinMsg));
+                                        if (typeof addSystemMessage === 'function') {
+                                            addSystemMessage(`${data.playerName} 加入了房间`);
+                                        } else {
+                                            console.log(`${data.playerName} 加入了房间`);
+                                        }
+                                    } else {
+                                        conn.send({ type: 'auth_fail' });
+                                        conn.close();
+                                    }
+                                }
+                            });
+                        });
+
+                        console.log('准备启动多人游戏');
+                        startMultiplayerGame();
+                    });
+
+                    peer.on('error', (err) => {
+                        console.error('PeerJS 错误:', err);
+                        if (err.type === 'unavailable-id') {
+                            alert('该密码已被占用，请换一个密码');
+                        } else {
+                            alert('连接服务器失败，请检查网络后重试。错误信息: ' + err.message);
+                        }
+                        showStartScreen();
+                    });
+                });
+            }
 
             function joinPrivateRoom(password) {
-    // 先输入房间ID
-    const hostId = prompt('请输入房主的房间ID');
-    if (!hostId) return;
+                showIdModal((playerName) => {
+                    gameState.multiplayer.isHost = false;
+                    // 直接用密码作为房间ID
+                    gameState.multiplayer.roomId = password;
+                    gameState.multiplayer.isPrivate = true;
+                    gameState.multiplayer.password = password;
+                    gameState.multiplayer.playerName = playerName;
 
-    showIdModal((playerName) => {
-        gameState.multiplayer.isHost = false;
-        gameState.multiplayer.roomId = hostId;
-        gameState.multiplayer.isPrivate = true;
-        gameState.multiplayer.password = password;
-        gameState.multiplayer.playerName = playerName;
+                    const peer = new Peer({
+                        config: {
+                            'iceServers': [
+                                { urls: 'stun:stun.l.google.com:19302' },
+                                { urls: 'stun:stun1.l.google.com:19302' },
+                                { urls: 'stun:stun2.l.google.com:19302' },
+                                { urls: 'stun:stun3.l.google.com:19302' },
+                                { urls: 'stun:stun4.l.google.com:19302' },
+                                {
+                                    urls: 'turn:turn.ztun.org:3478',
+                                    username: 'free',
+                                    credential: 'free'
+                                },
+                                {
+                                    urls: 'turn:turn.ztun.org:3478?transport=tcp',
+                                    username: 'free',
+                                    credential: 'free'
+                                },
+                                {
+                                    urls: 'turns:turn.ztun.org:5349',
+                                    username: 'free',
+                                    credential: 'free'
+                                }
+                            ]
+                        }
+                    });
+                    
+                    peer.on('open', (id) => {
+                        gameState.multiplayer.localPlayerId = id;
+                        
+                        const connectingDiv = document.createElement('div');
+                        connectingDiv.id = 'connecting-toast';
+                        connectingDiv.style.cssText = `
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background: black;
+                            color: white;
+                            padding: 1rem 2rem;
+                            border-radius: 2rem;
+                            z-index: 3000;
+                        `;
+                        connectingDiv.textContent = '正在连接房间...';
+                        document.body.appendChild(connectingDiv);
 
-        // 同样配置 STUN + TURN 服务器
-        const peer = new Peer({
-            config: {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' },
-                    {
-                        urls: 'turn:turn.ztun.org:3478',
-                        username: 'free',
-                        credential: 'free'
-                    },
-                    {
-                        urls: 'turn:turn.ztun.org:3478?transport=tcp',
-                        username: 'free',
-                        credential: 'free'
-                    },
-                    {
-                        urls: 'turns:turn.ztun.org:5349',
-                        username: 'free',
-                        credential: 'free'
-                    }
-                ]
-            }
-        });
-        
-        peer.on('open', (id) => {
-            gameState.multiplayer.localPlayerId = id;
-            
-            // 显示连接中提示
-            const connectingDiv = document.createElement('div');
-            connectingDiv.id = 'connecting-toast';
-            connectingDiv.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: black;
-                color: white;
-                padding: 1rem 2rem;
-                border-radius: 2rem;
-                z-index: 3000;
-            `;
-            connectingDiv.textContent = '正在连接房间...';
-            document.body.appendChild(connectingDiv);
+                        // 直接使用密码作为 hostId 连接
+                        const conn = peer.connect(password, {
+                            reliable: true,
+                            serialization: 'json'
+                        });
 
-            const conn = peer.connect(hostId, {
-                reliable: true,
-                serialization: 'json'
-            });
+                        const timeout = setTimeout(() => {
+                            document.body.removeChild(connectingDiv);
+                            alert('连接超时，请检查密码是否正确');
+                            peer.destroy();
+                        }, 10000);
 
-            const timeout = setTimeout(() => {
-                document.body.removeChild(connectingDiv);
-                alert('连接超时，请检查房间ID是否正确');
-                peer.destroy();
-            }, 10000);
+                        conn.on('open', () => {
+                            clearTimeout(timeout);
+                            document.body.removeChild(connectingDiv);
+                            
+                            conn.send({ 
+                                type: 'auth', 
+                                password: password,
+                                playerName: playerName 
+                            });
+                            
+                            gameState.multiplayer.connections = [conn];
+                            gameState.multiplayer.peer = peer;
+                            setupConnection(conn);
+                            
+                            conn.once('data', (data) => {
+                                if (data.type === 'auth_success') {
+                                    startMultiplayerGame();
+                                } else if (data.type === 'auth_fail') {
+                                    alert('密码错误');
+                                    peer.destroy();
+                                    showStartScreen();
+                                }
+                            });
+                        });
 
-            conn.on('open', () => {
-                clearTimeout(timeout);
-                document.body.removeChild(connectingDiv);
-                
-                // 发送认证信息，带上玩家名
-                conn.send({ 
-                    type: 'auth', 
-                    password: password,
-                    playerName: playerName 
-                });
-                
-                gameState.multiplayer.connections = [conn];
-                gameState.multiplayer.peer = peer;
-                setupConnection(conn);
-                
-                // 等待认证结果
-                conn.once('data', (data) => {
-                    if (data.type === 'auth_success') {
-                        startMultiplayerGame();
-                    } else if (data.type === 'auth_fail') {
-                        alert('密码错误');
-                        peer.destroy();
+                        conn.on('error', (err) => {
+                            clearTimeout(timeout);
+                            document.body.removeChild(connectingDiv);
+                            alert('连接失败：' + err.message);
+                            peer.destroy();
+                        });
+                    });
+
+                    peer.on('error', (err) => {
+                        alert('无法创建连接，请检查网络');
+                        console.error('Peer error:', err);
                         showStartScreen();
-                    }
+                    });
                 });
-            });
-
-            conn.on('error', (err) => {
-                clearTimeout(timeout);
-                document.body.removeChild(connectingDiv);
-                alert('连接失败：' + err.message);
-                peer.destroy();
-            });
-        });
-
-        peer.on('error', (err) => {
-            alert('无法创建连接，请检查网络');
-            console.error('Peer error:', err);
-            showStartScreen();
-        });
-    });
-}
+            }
 
             function setupConnection(conn) {
                 conn.on('data', (data) => {
@@ -1296,10 +1312,8 @@
                 });
 
                 conn.on('close', () => {
-                    // 从connections中移除
                     const index = gameState.multiplayer.connections.indexOf(conn);
                     if (index > -1) gameState.multiplayer.connections.splice(index, 1);
-                    // 如果是公开房间房主，更新人数
                     if (gameState.multiplayer.isHost && !gameState.multiplayer.isPrivate) {
                         const room = gameState.multiplayer.publicRooms[gameState.multiplayer.roomId];
                         if (room) {
@@ -1311,31 +1325,26 @@
             }
 
             function addChatMessage(sender, msg) {
-    const div = document.createElement('div');
-    div.innerHTML = `<b>${escapeHtml(sender)}:</b> ${escapeHtml(msg)}`;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-    
-    // 如果已经有定时器，先清除
-    if (window.clearChatTimer) {
-        clearTimeout(window.clearChatTimer);
-    }
-    
-    // 设置新定时器，20秒后清空对话框
-    window.clearChatTimer = setTimeout(() => {
-        chatMessages.innerHTML = '';
-        // 可以加一条系统消息提示（可选）
-        // const sysMsg = document.createElement('div');
-        // sysMsg.innerHTML = '<i>--- 对话已清空 ---</i>';
-        // chatMessages.appendChild(sysMsg);
-    }, 20000); // 20000毫秒 = 20秒
-}
-function addSystemMessage(msg) {
-    const div = document.createElement('div');
-    div.innerHTML = `<i style="color: #666;">${escapeHtml(msg)}</i>`;
-    chatMessages.appendChild(div);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
+                const div = document.createElement('div');
+                div.innerHTML = `<b>${escapeHtml(sender)}:</b> ${escapeHtml(msg)}`;
+                chatMessages.appendChild(div);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                if (window.clearChatTimer) {
+                    clearTimeout(window.clearChatTimer);
+                }
+                
+                window.clearChatTimer = setTimeout(() => {
+                    chatMessages.innerHTML = '';
+                }, 20000);
+            }
+
+            function addSystemMessage(msg) {
+                const div = document.createElement('div');
+                div.innerHTML = `<i style="color: #666;">${escapeHtml(msg)}</i>`;
+                chatMessages.appendChild(div);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
 
             // ---------- 事件绑定 ----------
             document.getElementById('singleplayer-btn').addEventListener('click', () => {
@@ -1349,11 +1358,9 @@ function addSystemMessage(msg) {
                 multiPanel.style.display = 'block';
                 updatePublicServerList();
             });
-// 定期清理可能失效的房间（比如崩溃没来得及删除的）
-setInterval(() => {
-    // 这个函数只在房主自己这里运行，所以不需要清理别人的房间
-    // 但我们可以检查一下自己的房间是否还在
-}, 30000); // 30秒一次
+
+            setInterval(() => {}, 30000);
+
             document.getElementById('back-from-single').addEventListener('click', showStartScreen);
             document.getElementById('back-from-multi').addEventListener('click', showStartScreen);
 
@@ -1438,27 +1445,23 @@ setInterval(() => {
                 if (e.key === 'Enter') chatSend.click();
             });
 
-            
-
-            // 窗口关闭清理
             window.addEventListener('beforeunload', () => {
-    // 如果是房主，从公开列表中删除房间
-    if (gameState.multiplayer.isHost && !gameState.multiplayer.isPrivate) {
-        const roomId = gameState.multiplayer.roomId;
-        if (roomId && gameState.multiplayer.publicRooms[roomId]) {
-            delete gameState.multiplayer.publicRooms[roomId];
-            // 如果有其他玩家，通知他们房主已离开
-            gameState.multiplayer.connections.forEach(conn => {
-                conn.send({ type: 'system', msg: '房主已离开，房间即将关闭' });
-                setTimeout(() => conn.close(), 1000);
+                if (gameState.multiplayer.isHost && !gameState.multiplayer.isPrivate) {
+                    const roomId = gameState.multiplayer.roomId;
+                    if (roomId && gameState.multiplayer.publicRooms[roomId]) {
+                        delete gameState.multiplayer.publicRooms[roomId];
+                        gameState.multiplayer.connections.forEach(conn => {
+                            conn.send({ type: 'system', msg: '房主已离开，房间即将关闭' });
+                            setTimeout(() => conn.close(), 1000);
+                        });
+                    }
+                }
+                
+                if (gameState.multiplayer.peer) {
+                    gameState.multiplayer.peer.destroy();
+                }
             });
-        }
-    }
-    
-    if (gameState.multiplayer.peer) {
-        gameState.multiplayer.peer.destroy();
-    }
-});
+
             // 初始化
             showStartScreen();
         })();
