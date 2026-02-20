@@ -1962,6 +1962,12 @@ function createPlayerBody() {
     rightLeg.position.set(0.25, -0.3, 0);
     group.add(rightLeg);
     
+    // 确保大小和本地角色一致（如果需要，可以设置scale）
+    // group.scale.set(1, 1, 1);
+    
+    // 修复朝向：旋转180度，让面具朝前
+    group.rotation.y = Math.PI;
+    
     return group;
 }
             function animate() {
