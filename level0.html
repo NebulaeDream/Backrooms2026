@@ -2240,7 +2240,93 @@ camera.rotation.set(0, gameState.rotationY, 0);  // 相机看向前方
                 
                 updateUI();
             }
+// ====== 新增：多人联机位置同步 ======
+const remotePlayers = {}; // 存储其他玩家的化身
 
+// 监听来自父窗口的消息
+window.addEventListener('message', (event) => {
+    const data = event.data;
+    if (!data) return;
+
+    // 父窗口请求本地位置
+    if (data.type === 'requestPosition') {
+        event.source.postMessage({
+            type: 'playerPosition',
+            position: { 
+                x: gameState.player.x, 
+                y: gameState.player.y, 
+                z: gameState.player.z 
+            },
+            rotation: gameState.rotationY
+        }, '*');
+    }
+    // 收到其他玩家的位置
+    else if (data.type === 'remotePlayerPosition') {
+        const id = data.playerId;
+        if (!remotePlayers[id]) {
+            // 创建其他玩家的身体（和你自己一模一样的黄色身体）
+            const remoteBody = createPlayerBody();
+            remoteBody.position.set(data.position.x, data.position.y, data.position.z);
+            remoteBody.rotation.y = data.rotation;
+            scene.add(remoteBody);
+            remotePlayers[id] = remoteBody;
+        } else {
+            // 更新位置和旋转
+            remotePlayers[id].position.set(data.position.x, data.position.y, data.position.z);
+            remotePlayers[id].rotation.y = data.rotation;
+        }
+    }
+    // 移除离开的玩家
+    else if (data.type === 'removeRemotePlayer') {
+        const id = data.playerId;
+        if (remotePlayers[id]) {
+            scene.remove(remotePlayers[id]);
+            delete remotePlayers[id];
+        }
+    }
+});
+
+// 辅助函数：创建玩家身体（复制你自己身体的那段代码）
+function createPlayerBody() {
+    const group = new THREE.Group();
+    
+    const torsoMat = new THREE.MeshStandardMaterial({ color: 0xffaa33 });
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.4), torsoMat);
+    torso.position.y = 0.7;
+    group.add(torso);
+    
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xff9933 });
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.4), headMat);
+    head.position.y = 1.5;
+    group.add(head);
+    
+    const maskMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+    const mask = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), maskMat);
+    mask.position.set(0, 1.5, 0.25);
+    group.add(mask);
+    
+    const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+    leftArm.position.set(-0.6, 1.0, 0);
+    group.add(leftArm);
+    
+    const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+    rightArm.position.set(0.6, 1.0, 0);
+    group.add(rightArm);
+    
+    const rightHand = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), torsoMat);
+    rightHand.position.set(0.6, 0.5, 0.2);
+    group.add(rightHand);
+    
+    const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+    leftLeg.position.set(-0.25, -0.3, 0);
+    group.add(leftLeg);
+    
+    const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+    rightLeg.position.set(0.25, -0.3, 0);
+    group.add(rightLeg);
+    
+    return group;
+}
             function animate() {
                 requestAnimationFrame(animate);
                 updatePlayer();
