@@ -878,6 +878,22 @@
                 gameContainer.style.display = 'block';
                 chatContainer.style.display = 'flex';
                 loadLevel(0);
+
+                // ====== 新增：启动位置同步 ======
+                if (gameState.multiplayer.peer) {
+                    startPositionSync();
+                }
+            }
+
+            // ====== 新增：位置同步函数 ======
+            function startPositionSync() {
+                // 每秒发送10次位置请求
+                setInterval(() => {
+                    if (!gameState.multiplayer.peer || gameState.multiplayer.connections.length === 0) return;
+                    if (gameFrame.contentWindow) {
+                        gameFrame.contentWindow.postMessage({ type: 'requestPosition' }, '*');
+                    }
+                }, 100);
             }
 
             function loadLevel(index) {
@@ -895,6 +911,7 @@
                 const data = event.data;
                 if (!data || typeof data !== 'object') return;
 
+                // 原有关卡完成/死亡处理
                 switch (data.type) {
                     case 'levelComplete':
                         gameState.currentLevelIndex++;
@@ -910,6 +927,20 @@
                             showStartScreen();
                         }, 1000);
                         break;
+                }
+
+                // ====== 新增：处理从 iframe 返回的玩家位置 ======
+                if (data.type === 'playerPosition') {
+                    // 把自己的位置广播给房间里的其他玩家
+                    const positionData = {
+                        type: 'position',
+                        playerId: gameState.multiplayer.localPlayerId,
+                        position: data.position,
+                        rotation: data.rotation
+                    };
+                    gameState.multiplayer.connections.forEach(conn => {
+                        conn.send(positionData);
+                    });
                 }
             });
 
@@ -1301,7 +1332,26 @@
                                 if (c !== conn) c.send(data);
                             });
                         }
-                    } else if (data.type === 'auth' && gameState.multiplayer.isHost) {
+                    } 
+                    // ====== 新增：处理位置数据 ======
+                    else if (data.type === 'position') {
+                        // 转发给所有其他玩家（如果是房主）
+                        if (gameState.multiplayer.isHost) {
+                            gameState.multiplayer.connections.forEach(c => {
+                                if (c !== conn) c.send(data);
+                            });
+                        }
+                        // 转发给 iframe 渲染
+                        if (gameFrame.contentWindow) {
+                            gameFrame.contentWindow.postMessage({
+                                type: 'remotePlayerPosition',
+                                playerId: data.playerId,
+                                position: data.position,
+                                rotation: data.rotation
+                            }, '*');
+                        }
+                    }
+                    else if (data.type === 'auth' && gameState.multiplayer.isHost) {
                         if (data.password === gameState.multiplayer.password) {
                             conn.send({ type: 'auth_success' });
                         } else {
@@ -1320,6 +1370,13 @@
                             room.playerCount = gameState.multiplayer.connections.length + 1;
                             updatePublicServerList();
                         }
+                    }
+                    // ====== 新增：通知 iframe 移除该玩家的化身 ======
+                    if (gameFrame.contentWindow) {
+                        gameFrame.contentWindow.postMessage({
+                            type: 'removeRemotePlayer',
+                            playerId: conn.peer
+                        }, '*');
                     }
                 });
             }
