@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Level 7 · 深海恐惧症</title>
+    <style>
+        /* ==================== UI 完全参照 level0 ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: #001020;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #001020;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        #inventory {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            background: rgba(10, 10, 10, 0.85);
+            padding: 6px;
+            border-radius: 14px;
+            border: 2px solid #00a6ff;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .inventory-slot {
+            width: 42px;
+            height: 42px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 2px solid #0055aa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #88ddff;
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.8);
+        }
+        
+        .inventory-slot.has-item { border-color: #76ff03; }
+        .inventory-slot.active { border-color: #FFD700; box-shadow: 0 0 12px gold; transform: scale(1.05); }
+        
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .control-group { display: flex; gap: 10px; justify-content: center; }
+        
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #00a6ff;
+            border-radius: 16px;
+            color: #88ddff;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 0 #003366;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .control-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #003366;
+            background: #00a6ff;
+            color: #1a1a1a;
+        }
+        
+        #jumpBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 120px;
+            width: 60px;
+            height: 60px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #00a6ff;
+            border-radius: 16px;
+            color: #88ddff;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #003366;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #jumpBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #003366;
+            background: #00a6ff;
+            color: #1a1a1a;
+        }
+        
+        #interactBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 100, 200, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 38px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #003366;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #interactBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #003366;
+            background: #00a6ff;
+        }
+        
+        #useBtn {
+            position: fixed;
+            top: 110px;
+            right: 15px;
+            width: 55px;
+            height: 55px;
+            background: rgba(76, 175, 80, 0.95);
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #2a5a2a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #useBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #2a5a2a;
+        }
+        
+        #dropBtn {
+            position: fixed;
+            top: 110px;
+            right: 80px;
+            width: 55px;
+            height: 55px;
+            background: #ff4444;
+            border: 3px solid white;
+            border-radius: 14px;
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #aa2222;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #dropBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa2222;
+        }
+        
+        #flashlightToggleBtn {
+            position: fixed;
+            bottom: 100px;
+            right: 35px;
+            width: 55px;
+            height: 55px;
+            background: rgba(255, 215, 0, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 26px;
+            color: #1a1a1a;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 4px 0 #5a4e2b;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .flashlight-on { background: rgba(255, 215, 0, 0.95); }
+        .flashlight-off { background: rgba(80, 80, 80, 0.95); color: #ccc; }
+        
+        .touch-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 500;
+            background: transparent;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        
+        .status-display {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            background: rgba(10, 10, 10, 0.85);
+            color: #88ddff;
+            padding: 10px 15px;
+            border-radius: 14px;
+            border: 2px solid #00a6ff;
+            font-size: 14px;
+            z-index: 2000;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            min-width: 160px;
+        }
+        
+        .status-display div { margin-bottom: 5px; }
+        
+        .sanity-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(50, 50, 50, 0.8);
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+            border: 1px solid #00a6ff;
+        }
+        
+        .sanity-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00c8ff, #00ffaa);
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        
+        #interactionHint {
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: #88ddff;
+            padding: 10px 22px;
+            border-radius: 40px;
+            display: none;
+            font-size: 17px;
+            font-weight: bold;
+            border: 2px solid #00a6ff;
+            z-index: 2000;
+            pointer-events: none;
+        }
+        
+        #caughtMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 30, 0.95);
+            padding: 35px;
+            border-radius: 28px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 7000;
+            border: 3px solid #0066ff;
+            color: #88ddff;
+            pointer-events: none;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        #settingsBtn {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #00a6ff;
+            border-radius: 12px;
+            color: #88ddff;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 4px 0 #003366;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton {
+            position: fixed;
+            top: 70px;
+            right: 12px;
+            width: 45px;
+            height: 45px;
+            background: #ffaa00;
+            border: 3px solid white;
+            border-radius: 12px;
+            color: black;
+            font-size: 22px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3001;
+            box-shadow: 0 4px 0 #aa7700;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #aa7700;
+        }
+        
+        #devConsole {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.98);
+            border: 3px solid #ffaa00;
+            border-radius: 18px;
+            padding: 25px;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 0 35px rgba(255,170,0,0.5);
+            pointer-events: auto;
+            width: 75%;
+            max-width: 350px;
+        }
+        
+        #devConsole input {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            background: #333;
+            border: 2px solid #ffaa00;
+            border-radius: 10px;
+            color: white;
+            outline: none;
+        }
+        
+        #devConsole button {
+            background: #ffaa00;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 28px;
+            font-size: 17px;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            border-bottom: 4px solid #aa7700;
+        }
+        
+        #devConsole button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        #settingsPanel {
+            position: fixed;
+            top: 75px;
+            right: 12px;
+            width: 220px;
+            background: rgba(10, 10, 10, 0.98);
+            border: 3px solid #d4c541;
+            border-radius: 16px;
+            padding: 18px;
+            color: #ffd966;
+            z-index: 3500;
+            pointer-events: auto;
+            display: none;
+            backdrop-filter: blur(8px);
+        }
+        
+        .quality-option {
+            background: rgba(40, 40, 40, 0.9);
+            border: 2px solid #8a7a3a;
+            border-radius: 30px;
+            padding: 10px 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .quality-option.active {
+            background: #d4c541;
+            color: #1a1a1a;
+        }
+        
+        .close-btn {
+            width: 100%;
+            padding: 10px;
+            background: #5a4e2b;
+            border: none;
+            border-radius: 30px;
+            color: #ffd966;
+            font-size: 15px;
+            margin-top: 12px;
+            cursor: pointer;
+            border-bottom: 3px solid #3a351a;
+        }
+        
+        .close-btn:active {
+            transform: translateY(2px);
+            border-bottom: none;
+        }
+        
+        #deathMessage, #sanityDeathMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 30px;
+            border-radius: 24px;
+            font-size: 22px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #d4c541;
+            color: #ffd966;
+            pointer-events: auto;
+        }
+        
+        #winMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 35px;
+            border-radius: 26px;
+            font-size: 26px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #3366ff;
+            color: #3366ff;
+            pointer-events: auto;
+        }
+        
+        #winMessage button, #deathMessage button, #sanityDeathMessage button {
+            margin-top: 22px;
+            padding: 12px 35px;
+            background: #d4c541;
+            border: none;
+            border-radius: 40px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1a1a1a;
+            border-bottom: 4px solid #5a4e2b;
+            cursor: pointer;
+        }
+        
+        #winMessage button:active, #deathMessage button:active, #sanityDeathMessage button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        #deathOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0044aa;
+            display: none;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        
+        /* 深海专属UI */
+        #locationDisplay {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 10, 0.85);
+            color: #88ddff;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 18px;
+            border: 2px solid #00a6ff;
+            z-index: 2000;
+            pointer-events: none;
+        }
+        
+        #interactBtn, #controls, #jumpBtn, #useBtn, #dropBtn, #flashlightToggleBtn, #settingsBtn, #devTButton {
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <div id="inventory">
+            <div class="inventory-slot" id="slot1"></div>
+            <div class="inventory-slot" id="slot2"></div>
+            <div class="inventory-slot" id="slot3"></div>
+            <div class="inventory-slot" id="slot4"></div>
+            <div class="inventory-slot" id="slot5"></div>
+            <div class="inventory-slot" id="slot6"></div>
+            <div class="inventory-slot" id="slot7"></div>
+            <div class="inventory-slot" id="slot8"></div>
+        </div>
+        
+        <div id="controls">
+            <div class="control-group"><button class="control-btn" id="forwardBtn">▲</button></div>
+            <div class="control-group">
+                <button class="control-btn" id="leftBtn">◀</button>
+                <button class="control-btn" id="backwardBtn">▼</button>
+                <button class="control-btn" id="rightBtn">▶</button>
+            </div>
+        </div>
+        
+        <button id="jumpBtn">⬆️</button>
+        <button id="interactBtn">✋</button>
+        <button id="useBtn">使用</button>
+        <button id="dropBtn">🗑️</button>
+        <button id="flashlightToggleBtn">🔦</button>
+        <button id="settingsBtn">⚙️</button>
+        <button id="devTButton">T</button>
+        
+        <div id="settingsPanel">
+            <div style="font-size:18px; font-weight:bold; margin-bottom:15px; text-align:center;">⚙️ 画质</div>
+            <div id="qualityLow" class="quality-option"><span>📱 低质</span><span>灯纯装饰</span></div>
+            <div id="qualityMid" class="quality-option"><span>📲 中等</span><span>正常光影</span></div>
+            <div id="qualityHigh" class="quality-option active"><span>💻 高质</span><span>阴影+光效</span></div>
+            <button class="close-btn" id="closeSettingsBtn">关闭</button>
+        </div>
+        
+        <div id="interactionHint">🔍 点击手掌交互</div>
+        
+        <div id="locationDisplay">🏝️ 小岛</div>
+        
+        <div class="status-display">
+            <div>💧 杏仁水: <span id="almondCount">0</span></div>
+            <div>🔴 痛苦液态: <span id="painCount">0</span></div>
+            <div>🔦 手电筒: <span id="flashlightOwned">无</span></div>
+            <div>🧠 理智:</div>
+            <div class="sanity-bar"><div id="sanityFill" class="sanity-fill" style="width:100%"></div></div>
+            <div>👾 <span id="monsterStatus">游荡</span></div>
+            <div>🎮 <span id="qualityStatus">高质</span></div>
+        </div>
+    </div>
+    
+    <div id="deathOverlay"></div>
+    
+    <div id="caughtMessage"><div style="font-size:32px; margin-bottom:12px;">🦈 被深海巨兽吞噬！</div><div>5秒后死亡...</div></div>
+    <div id="winMessage">
+        <h2>🎉 逃脱成功</h2>
+        <p>你跳进了通道，离开了Level 7！</p>
+        <button onclick="window.location.href='Level8.html'">▶ 通往下一关</button>
+        <button onclick="location.reload()">再来一局</button>
+    </div>
+    <div id="deathMessage"><h2>☠️ 葬身深海</h2><p style="color:#ff6666;">你永远留在了黑暗中</p><button onclick="location.reload()">重生</button></div>
+    <div id="sanityDeathMessage"><h2>💥 绝望崩溃</h2><button onclick="location.reload()">重生</button></div>
+    
+    <div class="touch-area" id="touchArea"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        (function() {
+            "use strict";
+
+            // ==================== 游戏状态 ====================
+            const gameState = {
+                player: { x: 0, y: 6.0, z: 0 },
+                rotationY: 0,
+                items: { 
+                    almondWater: 0,
+                    painSoda: 0
+                },
+                flashlightOn: false,
+                hasFlashlight: false,
+                nearItem: null,
+                nearBoat: false,
+                nearHouse: false,
+                inWater: false,
+                swimming: false,
+                onIsland: true,
+                inBoat: false,
+                boatIndex: -1,
+                boatPassengers: [0,0,0,0,0,0],
+                isAlive: true,
+                activeSlot: -1,
+                flashlightSlotIndex: -1,
+                quality: 'high',
+                sanity: 100,
+                sanityDrainRate: 0.02,
+                isJumping: false,
+                jumpVelocity: 0,
+                onGround: true,
+                isCaught: false,
+                catchTimer: 0,
+                isWinning: false,
+                winStartTime: 0,
+                
+                // 手持物品模型
+                heldItemModel: null,
+                
+                // 场景对象
+                boats: [],
+                sceneItems: [],
+                islandPos: { x: 0, z: 0 },
+                housePos: { x: 400, z: 400 },
+                leviathan: null
+            };
+
+            // ==================== Three.js 初始化 ====================
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x001020);
+            
+            // ===== 白色迷雾（手电筒才有用）=====
+            // ===== 块状迷雾（近距离清晰，远距离全白）=====
+scene.fog = new THREE.Fog(0xffffff, 1, 3); // 20单位内清晰，60单位外全白的
+            
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(0, 6.8, 5);
+            
+            // ==================== 手持物品容器 ====================
+            const heldItemContainer = new THREE.Group();
+
+            function createHeldItemModel(type) {
+                while(heldItemContainer.children.length > 0) {
+                    heldItemContainer.remove(heldItemContainer.children[0]);
+                }
+                
+                if (!type) return;
+                
+                let model;
+                if (type === '💧') {
+                    model = new THREE.Group();
+                    const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.18, 0.8, 8), canMat);
+                    body.position.y = 0.4;
+                    model.add(body);
+                    
+                    const cap = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.1, 0.1, 6),
+                        new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                    );
+                    cap.position.y = 0.8;
+                    model.add(cap);
+                    model.scale.set(0.4, 0.4, 0.4);
+                }
+                else if (type === '🔴') {
+                    model = new THREE.Group();
+                    const canMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8), canMat);
+                    body.position.y = 0.4;
+                    model.add(body);
+                    
+                    const topMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6), topMat);
+                    top.position.y = 0.85;
+                    model.add(top);
+                    model.scale.set(0.4, 0.4, 0.4);
+                }
+                else if (type === '🔦') {
+                    model = new THREE.Group();
+                    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0, 8), bodyMat);
+                    body.rotation.x = Math.PI / 2;
+                    body.position.set(0, 0, 0);
+                    model.add(body);
+                    
+                    const headMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.3, 8), headMat);
+                    head.rotation.x = Math.PI / 2;
+                    head.position.set(0, 0, 0.65);
+                    model.add(head);
+                    model.scale.set(0.4, 0.4, 0.4);
+                }
+                
+                if (model) {
+                    model.rotation.set(0.2, 0.5, 0.1);
+                    heldItemContainer.add(model);
+                }
+            }
+
+            heldItemContainer.position.set(0.6, -0.4, -0.8);
+            camera.add(heldItemContainer);
+            scene.add(camera);
+
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = false;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setClearColor(0x001020);
+
+            // ==================== 灯光系统 ====================
+            const ambientLight = new THREE.AmbientLight(0x335588, 0.6);
+            scene.add(ambientLight);
+            
+            const mainLight = new THREE.DirectionalLight(0x88aaff, 0.6);
+            mainLight.position.set(10, 20, 10);
+            scene.add(mainLight);
+            
+            const fillLight = new THREE.DirectionalLight(0x446688, 0.3);
+            fillLight.position.set(-5, 5, -5);
+            scene.add(fillLight);
+            
+            const backLight = new THREE.DirectionalLight(0x224466, 0.2);
+            backLight.position.set(0, 5, -10);
+            scene.add(backLight);
+            
+            const flashlight = new THREE.SpotLight(0xaaccff, 3.0);
+            flashlight.angle = 0.4;
+            flashlight.penumbra = 0.3;
+            flashlight.distance = 80;
+            flashlight.castShadow = true;
+            scene.add(flashlight);
+            flashlight.visible = false;
+            
+            const flashlightTarget = new THREE.Object3D();
+            flashlight.target = flashlightTarget;
+            scene.add(flashlightTarget);
+
+            // ==================== 玩家身体 ====================
+            const playerBody = new THREE.Group();
+            
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0xffaa33 });
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.4), torsoMat);
+            torso.position.y = 0.7;
+            playerBody.add(torso);
+            
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xff9933 });
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.4), headMat);
+            head.position.y = 1.5;
+            playerBody.add(head);
+            
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const mask = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), maskMat);
+            mask.position.set(0, 1.5, 0.25);
+            playerBody.add(mask);
+            
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftArm.position.set(-0.6, 1.0, 0);
+            playerBody.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightArm.position.set(0.6, 1.0, 0);
+            playerBody.add(rightArm);
+            
+            const rightHand = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.35, 0.35), torsoMat);
+            rightHand.position.set(0.6, 0.5, 0.2);
+            playerBody.add(rightHand);
+            
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftLeg.position.set(-0.25, -0.3, 0);
+            playerBody.add(leftLeg);
+            
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightLeg.position.set(0.25, -0.3, 0);
+            playerBody.add(rightLeg);
+            
+            playerBody.position.set(0, 6.0, 0);
+            scene.add(playerBody);
+
+            // ==================== 画质设置 ====================
+            function applyQualitySettings(quality) {
+                gameState.quality = quality;
+                document.getElementById('qualityStatus').textContent = 
+                    quality === 'low' ? '低质' : quality === 'mid' ? '中等' : '高质';
+                
+                document.querySelectorAll('.quality-option').forEach(el => el.classList.remove('active'));
+                if(quality === 'low') document.getElementById('qualityLow').classList.add('active');
+                if(quality === 'mid') document.getElementById('qualityMid').classList.add('active');
+                if(quality === 'high') document.getElementById('qualityHigh').classList.add('active');
+                
+                if(quality === 'low') {
+                    ambientLight.intensity = 0.8;
+                    mainLight.intensity = 0.8;
+                    fillLight.intensity = 0.4;
+                    backLight.intensity = 0.3;
+                    flashlight.intensity = 2.0;
+                    renderer.shadowMap.enabled = false;
+                } else if(quality === 'mid') {
+                    ambientLight.intensity = 0.6;
+                    mainLight.intensity = 0.6;
+                    fillLight.intensity = 0.3;
+                    backLight.intensity = 0.2;
+                    flashlight.intensity = 2.5;
+                    renderer.shadowMap.enabled = false;
+                } else {
+                    ambientLight.intensity = 0.5;
+                    mainLight.intensity = 0.5;
+                    fillLight.intensity = 0.2;
+                    backLight.intensity = 0.1;
+                    flashlight.intensity = 3.0;
+                    renderer.shadowMap.enabled = true;
+                }
+                
+                flashlight.visible = gameState.hasFlashlight && gameState.flashlightOn && gameState.activeSlot === gameState.flashlightSlotIndex;
+            }
+
+            // ==================== 创建海洋 ====================
+            function createOcean() {
+                const oceanMat = new THREE.MeshStandardMaterial({ 
+                    color: 0x113366,
+        emissive: 0x112244,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const ocean = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), oceanMat);
+                ocean.rotation.x = -Math.PI / 2;
+                ocean.position.y = 0;
+                scene.add(ocean);
+            }
+
+            // ==================== 创建小岛 ====================
+            function createIsland() {
+                const group = new THREE.Group();
+                
+                const baseMat = new THREE.MeshStandardMaterial({ color: 0x8B5A2B });
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(20, 24, 8, 16), baseMat);
+                base.position.y = 4;
+                group.add(base);
+                
+                const groundMat = new THREE.MeshStandardMaterial({ color: 0x6B8E23 });
+                const ground = new THREE.Mesh(new THREE.CylinderGeometry(18, 18, 1, 16), groundMat);
+                ground.position.y = 7.0;
+                group.add(ground);
+                
+                const treeMat = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+                const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const radius = 10;
+                    
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1.0, 3, 6), trunkMat);
+                    trunk.position.set(Math.cos(angle) * radius, 8.0, Math.sin(angle) * radius);
+                    group.add(trunk);
+                    
+                    const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.5, 6), treeMat);
+                    leaves.position.set(Math.cos(angle) * radius, 10.0, Math.sin(angle) * radius);
+                    group.add(leaves);
+                }
+                
+                group.position.set(0, 0, 0);
+                scene.add(group);
+                return group;
+            }
+
+            // ==================== 创建小船 ====================
+            function createBoat(index, x, z) {
+                const group = new THREE.Group();
+                
+                const woodMat = new THREE.MeshStandardMaterial({ color: 0xA0522D });
+                
+                const hull = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 5.0, 8), woodMat);
+                hull.rotation.z = Math.PI / 2;
+                hull.position.y = 0.5;
+                group.add(hull);
+                
+                const cabin = new THREE.Mesh(new THREE.BoxGeometry(2.5, 1.5, 2.0), woodMat);
+                cabin.position.set(0, 1.2, 0);
+                group.add(cabin);
+                
+                const flagMat = new THREE.MeshStandardMaterial({ color: 0xFFD700 });
+                const flag = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.5, 0.8), flagMat);
+                flag.position.set(1.8, 1.8, 0);
+                group.add(flag);
+                
+                for (let i = 0; i < 2; i++) {
+                    const seat = new THREE.Mesh(new THREE.SphereGeometry(0.3, 6), new THREE.MeshStandardMaterial({ color: 0x00FF00 }));
+                    seat.position.set(0, 1.5, -1.0 + i * 2.0);
+                    group.add(seat);
+                }
+                
+                group.position.set(x, 0.3, z);
+                group.userData = { 
+                    type: 'boat',
+                    index: index,
+                    passengers: 0
+                };
+                
+                scene.add(group);
+                gameState.boats.push(group);
+                return group;
+            }
+
+            // ==================== 创建小房子 ====================
+            function createHouse() {
+                const group = new THREE.Group();
+                
+                const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                const roofMat = new THREE.MeshStandardMaterial({ color: 0xCD853F });
+                const lightMat = new THREE.MeshStandardMaterial({ color: 0x88aaff, emissive: 0x224466 });
+                
+                const base = new THREE.Mesh(new THREE.CylinderGeometry(8, 8, 2, 8), woodMat);
+                base.position.y = 1;
+                group.add(base);
+                
+                for (let i = -2.5; i <= 2.5; i+=5) {
+                    for (let j = -2.5; j <= 2.5; j+=5) {
+                        const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.8, 5, 0.8), woodMat);
+                        pillar.position.set(i, 3.5, j);
+                        group.add(pillar);
+                    }
+                }
+                
+                const roof = new THREE.Mesh(new THREE.ConeGeometry(5, 2, 8), roofMat);
+                roof.position.set(0, 6, 0);
+                group.add(roof);
+                
+                const light = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 1, 8), lightMat);
+                light.position.set(0, 1.5, 0);
+                group.add(light);
+                
+                const pointLight = new THREE.PointLight(0x88aaff, 3, 100);
+                pointLight.position.set(0, 4, 0);
+                group.add(pointLight);
+                
+                group.position.set(gameState.housePos.x, 0, gameState.housePos.z);
+                group.userData = { type: 'house' };
+                
+                scene.add(group);
+                return group;
+            }
+
+            // ==================== 创建物品 ====================
+            function createFlashlightItem(x, z) {
+                const group = new THREE.Group();
+                
+                const body = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.2, 1.0, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x222222 })
+                );
+                body.rotation.x = Math.PI / 2;
+                body.position.set(0, 0, 0);
+                body.castShadow = true;
+                group.add(body);
+                
+                const head = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.15, 0.15, 0.3, 8),
+                    new THREE.MeshStandardMaterial({ color: 0x333333 })
+                );
+                head.rotation.x = Math.PI / 2;
+                head.position.set(0, 0, 0.65);
+                head.castShadow = true;
+                group.add(head);
+                
+                group.position.set(x, 6.2, z);
+                group.userData = { type: 'flashlight' };
+                return group;
+            }
+
+            function createAlmondWater(x, z) {
+                const group = new THREE.Group();
+                
+                const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                const bottle = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.18, 0.8, 8),
+                    canMat
+                );
+                bottle.position.y = 0.4;
+                bottle.castShadow = true;
+                group.add(bottle);
+                
+                const cap = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.1, 0.1, 6),
+                    new THREE.MeshStandardMaterial({ color: 0xcccccc })
+                );
+                cap.position.y = 0.8;
+                cap.castShadow = true;
+                group.add(cap);
+                
+                group.position.set(x, 6.0, z);
+                group.userData = { type: 'almond' };
+                return group;
+            }
+
+            function createPainSoda(x, z) {
+                const group = new THREE.Group();
+                
+                const canMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.28, 0.8, 8), canMat);
+                body.position.y = 0.4;
+                group.add(body);
+                
+                const topMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                const top = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 6), topMat);
+                top.position.y = 0.85;
+                group.add(top);
+                
+                group.position.set(x, 6.0, z);
+                group.userData = { type: 'pain' };
+                return group;
+            }
+
+            // ==================== 创建深海巨兽 ====================
+            function createLeviathan() {
+                const group = new THREE.Group();
+                
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x1A2F3A, emissive: 0x112233 });
+                
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 16, 8), bodyMat);
+                body.rotation.x = Math.PI / 2;
+                body.position.y = 0;
+                group.add(body);
+                
+                const head = new THREE.Mesh(new THREE.SphereGeometry(3, 8), bodyMat);
+                head.position.set(0, 0, 7);
+                group.add(head);
+                
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xFF4444, emissive: 0x330000 });
+                const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.6, 6), eyeMat);
+                eye1.position.set(-1.5, 1.0, 9);
+                group.add(eye1);
+                
+                const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.6, 6), eyeMat);
+                eye2.position.set(1.5, 1.0, 9);
+                group.add(eye2);
+                
+                group.position.set(0, -30, 0);
+                group.scale.set(1.8, 1.8, 1.8);
+                group.userData = { active: false };
+                
+                scene.add(group);
+                gameState.leviathan = group;
+                return group;
+            }
+
+            // ==================== 构建场景 ====================
+            function buildScene() {
+                createOcean();
+                createIsland();
+                
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const radius = 25;
+                    const x = Math.cos(angle) * radius;
+                    const z = Math.sin(angle) * radius;
+                    createBoat(i, x, z);
+               
+                }
+                
+                createHouse();
+                
+                const itemPositions = [
+                    [3, 2, 'flashlight'],
+                    [-2, 4, 'almond'],
+                    [4, -3, 'pain'],
+                    [-4, -2, 'almond'],
+                    [0, 5, 'pain'],
+                    [5, 0, 'flashlight']
+                ];
+                
+                itemPositions.forEach(pos => {
+                    let item;
+                    if (pos[2] === 'flashlight') item = createFlashlightItem(pos[0], pos[1]);
+                    else if (pos[2] === 'almond') item = createAlmondWater(pos[0], pos[1]);
+                    else if (pos[2] === 'pain') item = createPainSoda(pos[0], pos[1]);
+                    
+                    scene.add(item);
+                    gameState.sceneItems.push(item);
+                });
+                
+                createLeviathan();
+            }
+
+            // ==================== 更新手持物品 ====================
+            function updateHeldItem() {
+                if (gameState.activeSlot === -1) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                
+                const slot = document.getElementById('slot' + (gameState.activeSlot + 1));
+                if (!slot || !slot.classList.contains('has-item')) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                
+                const itemType = slot.textContent;
+                createHeldItemModel(itemType);
+            }
+
+            // ==================== 丢弃物品 ====================
+            function dropItem() {
+                if(gameState.isCaught || !gameState.isAlive || gameState.isWinning) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement || !slotElement.classList.contains('has-item')) return;
+                
+                const itemType = slotElement.textContent;
+                if(!itemType) return;
+                
+                let droppedItem = null;
+                const dropX = gameState.player.x;
+                const dropZ = gameState.player.z;
+                const dropY = gameState.player.y - 0.5;
+                
+                if (itemType === '💧' && gameState.items.almondWater > 0) {
+                    gameState.items.almondWater--;
+                    droppedItem = createAlmondWater(dropX, dropZ);
+                    droppedItem.position.y = dropY;
+                }
+                else if (itemType === '🔴' && gameState.items.painSoda > 0) {
+                    gameState.items.painSoda--;
+                    droppedItem = createPainSoda(dropX, dropZ);
+                    droppedItem.position.y = dropY;
+                }
+                else if (itemType === '🔦' && gameState.hasFlashlight) {
+                    gameState.hasFlashlight = false;
+                    gameState.flashlightOn = false;
+                    droppedItem = createFlashlightItem(dropX, dropZ);
+                    droppedItem.position.y = dropY;
+                }
+                
+                if (droppedItem) {
+                    scene.add(droppedItem);
+                    gameState.sceneItems.push(droppedItem);
+                    
+                    gameState.activeSlot = -1;
+                    
+                    updateUI();
+                    updateHeldItem();
+                }
+            }
+
+            // ==================== 蓝色死亡遮罩 ====================
+            const deathOverlay = document.getElementById('deathOverlay');
+            
+            function startDeathSequence() {
+                document.getElementById('caughtMessage').style.display = 'none';
+                deathOverlay.style.display = 'block';
+                deathOverlay.style.opacity = 1;
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+
+            // ==================== UI更新 ====================
+            function updateUI() {
+                document.getElementById('almondCount').textContent = gameState.items.almondWater;
+                document.getElementById('painCount').textContent = gameState.items.painSoda;
+                document.getElementById('flashlightOwned').textContent = gameState.hasFlashlight ? '🔦有' : '无';
+                document.getElementById('sanityFill').style.width = gameState.sanity + '%';
+                
+                if (gameState.onIsland) {
+                    document.getElementById('locationDisplay').innerHTML = '🏝️ 小岛';
+                } else if (gameState.inBoat) {
+                    document.getElementById('locationDisplay').innerHTML = '🛶 小船';
+                } else if (gameState.swimming) {
+                    document.getElementById('locationDisplay').innerHTML = '🌊 游泳';
+                }
+                
+                if (gameState.leviathan && gameState.leviathan.userData.active) {
+                    document.getElementById('monsterStatus').textContent = '🦈 利维坦追击';
+                } else if (gameState.swimming) {
+                    document.getElementById('monsterStatus').textContent = '🌊 游泳中';
+                } else {
+                    document.getElementById('monsterStatus').textContent = '👁️ 游荡';
+                }
+                
+                const sanityFill = document.getElementById('sanityFill');
+                if(gameState.sanity > 60) {
+                    sanityFill.style.background = 'linear-gradient(90deg, #00c8ff, #00ffaa)';
+                } else if(gameState.sanity > 30) {
+                    sanityFill.style.background = 'linear-gradient(90deg, #ffaa00, #ffdd00)';
+                } else {
+                    sanityFill.style.background = 'linear-gradient(90deg, #ff5500, #ff0000)';
+                }
+                
+                for(let i=1;i<=8;i++) {
+                    const slot = document.getElementById('slot'+i);
+                    slot.textContent = '';
+                    slot.classList.remove('has-item', 'active');
+                }
+                
+                let slotIdx = 0;
+                for(let i=0; i<gameState.items.almondWater; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '💧';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                for(let i=0; i<gameState.items.painSoda; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🔴';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                if(gameState.hasFlashlight && slotIdx<8) {
+                    document.getElementById('slot'+(slotIdx+1)).textContent = '🔦';
+                    document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                    gameState.flashlightSlotIndex = slotIdx;
+                    slotIdx++;
+                }
+                
+                if(gameState.activeSlot !== -1) {
+                    const active = document.getElementById('slot'+(gameState.activeSlot+1));
+                    if(active) active.classList.add('active');
+                }
+                
+                const fb = document.getElementById('flashlightToggleBtn');
+                if(gameState.activeSlot === gameState.flashlightSlotIndex && gameState.hasFlashlight) {
+                    fb.style.display = 'flex';
+                    fb.innerHTML = gameState.flashlightOn ? '🔦' : '🔦';
+                    fb.className = gameState.flashlightOn ? 'flashlight-on' : 'flashlight-off';
+                } else {
+                    fb.style.display = 'none';
+                }
+                
+                updateHeldItem();
+            }
+
+            function handleJump() {
+                if(gameState.onGround && !gameState.isCaught && !gameState.inBoat && !gameState.swimming && !gameState.isWinning) {
+                    gameState.isJumping = true;
+                    gameState.jumpVelocity = 0.28;
+                    gameState.onGround = false;
+                }
+            }
+
+            function updateJump() {
+                if(gameState.isJumping) {
+                    gameState.player.y += gameState.jumpVelocity;
+                    gameState.jumpVelocity -= 0.016;
+                    
+                    if(gameState.player.y <= 6.0) {
+                        gameState.player.y = 8.0;
+                        gameState.isJumping = false;
+                        gameState.jumpVelocity = 0;
+                        gameState.onGround = true;
+                    }
+                }
+            }
+
+            function useItem() {
+                if(gameState.isCaught || !gameState.isAlive || gameState.isWinning) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement) return;
+                
+                const itemType = slotElement.textContent;
+                
+                if(itemType === '💧' && gameState.items.almondWater > 0) {
+                    gameState.items.almondWater--;
+                    gameState.sanity = Math.min(100, gameState.sanity + 40);
+                    updateUI();
+                } else if(itemType === '🔴' && gameState.items.painSoda > 0) {
+                    // 痛苦液态：直接死亡
+                    gameState.isAlive = false;
+                    startDeathSequence();
+                }
+            }
+
+            function interactHandler() {
+                if(!gameState.isAlive || gameState.isCaught || gameState.isWinning) return;
+                
+                if (gameState.nearHouse) {
+                    gameState.isWinning = true;
+                    gameState.winStartTime = performance.now();
+                    gameState.isAlive = false;
+                    document.getElementById('interactBtn').style.opacity = '0';
+                    document.getElementById('controls').style.opacity = '0';
+                    document.getElementById('jumpBtn').style.opacity = '0';
+                    document.getElementById('useBtn').style.opacity = '0';
+                    document.getElementById('dropBtn').style.opacity = '0';
+                    document.getElementById('flashlightToggleBtn').style.opacity = '0';
+                    document.getElementById('settingsBtn').style.opacity = '0';
+                    document.getElementById('devTButton').style.opacity = '0';
+                    
+                    gameState.winStartPos = {
+                        x: gameState.player.x,
+                        y: gameState.player.y,
+                        z: gameState.player.z
+                    };
+                    return;
+                }
+                
+                if (gameState.onIsland && gameState.nearBoat) {
+                    let closestBoat = null;
+                    let closestDist = Infinity;
+                    gameState.boats.forEach(boat => {
+                        const dist = Math.sqrt(
+                            (gameState.player.x - boat.position.x)**2 + 
+                            (gameState.player.z - boat.position.z)**2
+                        );
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            closestBoat = boat;
+                        }
+                    });
+                    
+                    if (closestBoat && gameState.boatPassengers[closestBoat.userData.index] < 2) {
+                        gameState.onIsland = false;
+                        gameState.inBoat = true;
+                        gameState.swimming = false;
+                        gameState.boatIndex = closestBoat.userData.index;
+                        gameState.boatPassengers[gameState.boatIndex]++;
+                        gameState.player.x = closestBoat.position.x;
+                        gameState.player.z = closestBoat.position.z;
+                        gameState.player.y = 1.6;
+                        updateUI();
+                    }
+                    return;
+                }
+                
+                if (gameState.inBoat) {
+                    const distToIsland = Math.sqrt(
+                        (gameState.player.x - gameState.islandPos.x)**2 + 
+                        (gameState.player.z - gameState.islandPos.z)**2
+                    );
+                    
+                    if (distToIsland < 30) {
+                        gameState.inBoat = false;
+                        gameState.onIsland = true;
+                        gameState.swimming = false;
+                        gameState.boatPassengers[gameState.boatIndex]--;
+                        gameState.player.x = gameState.islandPos.x + 2;
+                        gameState.player.z = gameState.islandPos.z + 2;
+                        gameState.player.y = 8.0;
+                        updateUI();
+                    }
+                    return;
+                }
+                
+                if (gameState.nearItem) {
+                    const item = gameState.nearItem;
+                    const type = item.userData.type;
+                    
+                    if (type === 'flashlight' && !gameState.hasFlashlight) {
+                        gameState.hasFlashlight = true;
+                        scene.remove(item);
+                        const idx = gameState.sceneItems.indexOf(item);
+                        if(idx > -1) gameState.sceneItems.splice(idx,1);
+                        updateUI();
+                    } else if (type === 'almond') {
+                        gameState.items.almondWater++;
+                        scene.remove(item);
+                        const idx = gameState.sceneItems.indexOf(item);
+                        if(idx > -1) gameState.sceneItems.splice(idx,1);
+                        updateUI();
+                    } else if (type === 'pain') {
+                        gameState.items.painSoda++;
+                        scene.remove(item);
+                        const idx = gameState.sceneItems.indexOf(item);
+                        if(idx > -1) gameState.sceneItems.splice(idx,1);
+                        updateUI();
+                    }
+                }
+            }
+
+            function initDevTools() {
+                const devTButton = document.getElementById('devTButton');
+                
+                const devConsole = document.createElement('div');
+                devConsole.id = 'devConsole';
+                devConsole.innerHTML = `
+                    <div style="color:#ffaa00; font-size:22px; font-weight:bold;">⚡ 开发者</div>
+                    <input type="text" id="devInput" placeholder="give all / goto house">
+                    <button id="closeDevBtn">关闭</button>
+                `;
+                document.body.appendChild(devConsole);
+                
+                const devInput = document.getElementById('devInput');
+                const closeBtn = document.getElementById('closeDevBtn');
+                
+                devTButton.addEventListener('click', () => {
+                    devConsole.style.display = 'flex';
+                });
+                
+                devInput.addEventListener('keypress', (e) => {
+                    if(e.key === 'Enter') {
+                        const cmd = e.target.value.trim();
+                        if(cmd === 'give all') {
+                            gameState.hasFlashlight = true;
+                            gameState.items.almondWater += 5;
+                            gameState.items.painSoda += 5;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            e.target.value = '';
+                            alert('✅ 获得所有物品');
+                        } else if(cmd === 'goto house') {
+                            gameState.player.x = gameState.housePos.x;
+                            gameState.player.z = gameState.housePos.z;
+                            gameState.onIsland = false;
+                            gameState.inBoat = false;
+                            gameState.swimming = false;
+                            gameState.player.y = 1.6;
+                            devConsole.style.display = 'none';
+                            e.target.value = '';
+                        } else {
+                            alert('未知命令');
+                        }
+                    }
+                });
+                
+                closeBtn.addEventListener('click', () => {
+                    devConsole.style.display = 'none';
+                    devInput.value = '';
+                });
+            }
+
+            // ==================== 触摸滑动 ====================
+            const touchArea = document.getElementById('touchArea');
+            let lastX = 0;
+            
+            touchArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+            
+            touchArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - lastX;
+                gameState.rotationY -= dx * 0.01;
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+
+            // ==================== 键盘/按钮 ====================
+            const keys = { w: false, s: false, a: false, d: false };
+            
+            document.addEventListener('keydown', (e) => {
+                if(gameState.isCaught || gameState.isWinning) return;
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = true;
+                    e.preventDefault();
+                } else if(k === ' ') {
+                    handleJump();
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = false;
+                    e.preventDefault();
+                }
+            });
+            
+            document.getElementById('forwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.isWinning) keys.w = true; });
+            document.getElementById('forwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.w = false; });
+            document.getElementById('backwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.isWinning) keys.s = true; });
+            document.getElementById('backwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.s = false; });
+            document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.isWinning) keys.a = true; });
+            document.getElementById('leftBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.a = false; });
+            document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); if(!gameState.isCaught && !gameState.isWinning) keys.d = true; });
+            document.getElementById('rightBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.d = false; });
+            
+            document.getElementById('jumpBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleJump(); });
+            document.getElementById('jumpBtn').addEventListener('touchend', (e) => { e.preventDefault(); });
+            
+            document.getElementById('interactBtn').addEventListener('click', interactHandler);
+            document.getElementById('interactBtn').addEventListener('touchstart', (e) => { e.preventDefault(); interactHandler(); });
+            
+            document.getElementById('useBtn').addEventListener('click', useItem);
+            document.getElementById('useBtn').addEventListener('touchstart', (e) => { e.preventDefault(); useItem(); });
+            
+            document.getElementById('dropBtn').addEventListener('click', dropItem);
+            document.getElementById('dropBtn').addEventListener('touchstart', (e) => { e.preventDefault(); dropItem(); });
+            
+            document.getElementById('flashlightToggleBtn').addEventListener('click', () => {
+                if(gameState.hasFlashlight && gameState.activeSlot === gameState.flashlightSlotIndex) {
+                    gameState.flashlightOn = !gameState.flashlightOn;
+                }
+                updateUI();
+            });
+            
+            document.querySelectorAll('.inventory-slot').forEach((slot, idx) => {
+                slot.addEventListener('click', () => {
+                    if(slot.classList.contains('has-item')) {
+                        document.querySelectorAll('.inventory-slot').forEach(s => s.classList.remove('active'));
+                        slot.classList.add('active');
+                        gameState.activeSlot = idx;
+                    }
+                    updateUI();
+                });
+            });
+            
+            const settingsBtn = document.getElementById('settingsBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+            
+            settingsBtn.onclick = () => {
+                settingsPanel.style.display = settingsPanel.style.display === 'none' ? 'block' : 'none';
+            };
+            
+            document.getElementById('closeSettingsBtn').onclick = () => {
+                settingsPanel.style.display = 'none';
+            };
+            
+            document.getElementById('qualityLow').onclick = () => applyQualitySettings('low');
+            document.getElementById('qualityMid').onclick = () => applyQualitySettings('mid');
+            document.getElementById('qualityHigh').onclick = () => applyQualitySettings('high');
+
+            let lastTime = performance.now();
+            let catchStartTime = 0;
+            
+            function updatePlayer() {
+                const now = performance.now();
+                const deltaTime = Math.min(0.1, (now - lastTime) / 1000);
+                lastTime = now;
+                
+                // ====== 胜利动画 ======
+                if (gameState.isWinning) {
+                    const elapsed = (now - gameState.winStartTime) / 1000;
+                    
+                    if (elapsed < 4) {
+                        const progress = Math.min(1, elapsed / 4);
+                        gameState.player.x = gameState.winStartPos.x + (gameState.housePos.x - gameState.winStartPos.x) * progress;
+                        gameState.player.z = gameState.winStartPos.z + (gameState.housePos.z - gameState.winStartPos.z) * progress;
+                        if (progress > 0.9) gameState.player.y = 1.6;
+                    } 
+                    else if (elapsed < 5) {
+                        gameState.player.y = 1.6;
+                    }
+                    else if (elapsed < 8) {
+                        const progress = (elapsed - 5) / 3;
+                        const waterSpot = { x: gameState.housePos.x + 8, z: gameState.housePos.z + 8 };
+                        gameState.player.x = gameState.housePos.x + (waterSpot.x - gameState.housePos.x) * progress;
+                        gameState.player.z = gameState.housePos.z + (waterSpot.z - gameState.housePos.z) * progress;
+                        gameState.player.y = 1.6;
+                    }
+                    else if (elapsed < 10) {
+                        const jumpProgress = (elapsed - 8) / 2;
+                        gameState.player.y = 1.6 - jumpProgress * 10;
+                        camera.rotation.z = Math.sin(elapsed * 15) * 0.3;
+                        camera.rotation.x = -0.2;
+                    }
+                    else if (elapsed < 11) {
+                        deathOverlay.style.opacity = (elapsed - 10);
+                        deathOverlay.style.display = 'block';
+                    }
+                    else {
+                        document.getElementById('winMessage').style.display = 'block';
+                        parent.postMessage({ type: 'levelComplete' }, '*');
+                        gameState.isWinning = false;
+                        return;
+                    }
+                    
+                    const bodyOffset = 2.0;
+                    playerBody.position.set(
+                        gameState.player.x + Math.sin(gameState.rotationY) * bodyOffset,
+                        gameState.player.y - 0.8,
+                        gameState.player.z + Math.cos(gameState.rotationY) * bodyOffset
+                    );
+                    playerBody.rotation.y = gameState.rotationY;
+                    camera.position.set(gameState.player.x, gameState.player.y + 0.2, gameState.player.z + 1.5);
+                    camera.rotation.set(0, gameState.rotationY, 0);
+                    
+                    updateUI();
+                    return;
+                }
+                
+                if(!gameState.isAlive) return;
+                
+                if(gameState.isCaught) {
+                    if(catchStartTime === 0) catchStartTime = now;
+                    const caughtElapsed = now - catchStartTime;
+                    if(caughtElapsed >= 5000) startDeathSequence();
+                    return;
+                }
+                
+                updateJump();
+                
+                // ====== 速度设置 ======
+                let speed = 0;
+                if (gameState.onIsland) speed = 0.22;
+                else if (gameState.inBoat) speed = 0.35;
+                else if (gameState.swimming) speed = 0.3;
+                
+                let nx = gameState.player.x;
+                let nz = gameState.player.z;
+                
+                if(keys.w) { 
+                    nx -= Math.sin(gameState.rotationY) * speed; 
+                    nz -= Math.cos(gameState.rotationY) * speed; 
+                }
+                if(keys.s) { 
+                    nx += Math.sin(gameState.rotationY) * speed; 
+                    nz += Math.cos(gameState.rotationY) * speed; 
+                }
+                if(keys.a) { 
+                    gameState.rotationY += 0.03;
+                }
+                if(keys.d) { 
+                    gameState.rotationY -= 0.03;
+                }
+                
+                // ====== 掉进海里检测 ======
+                if (gameState.onIsland) {
+                    const distFromIsland = Math.sqrt(nx*nx + nz*nz);
+                    if (distFromIsland > 22) {
+                        gameState.onIsland = false;
+                        gameState.swimming = true;
+                        gameState.player.y = 0.5;
+                    }
+                }
+                
+                if (!gameState.isCaught && !gameState.isWinning) {
+                    gameState.player.x = nx;
+                    gameState.player.z = nz;
+                }
+                
+                if (gameState.swimming) {
+                    gameState.player.y = 0.5;
+                }
+                
+                const bodyOffset = gameState.inBoat ? 1.0 : 2.0;
+                playerBody.position.set(
+                    gameState.player.x + Math.sin(gameState.rotationY) * bodyOffset,
+                    gameState.player.y - 0.8,
+                    gameState.player.z + Math.cos(gameState.rotationY) * bodyOffset
+                );
+                playerBody.rotation.y = gameState.rotationY;
+                camera.position.set(gameState.player.x, gameState.player.y + 0.2, gameState.player.z + 1.5);
+                camera.rotation.set(0, gameState.rotationY, 0);
+                
+                if(gameState.hasFlashlight && gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlightOn) {
+                    flashlight.visible = true;
+                    flashlight.position.copy(camera.position);
+                    flashlightTarget.position.set(
+                        camera.position.x - Math.sin(gameState.rotationY) * 25,
+                        camera.position.y - 0.2,
+                        camera.position.z - Math.cos(gameState.rotationY) * 25
+                    );
+                } else {
+                    flashlight.visible = false;
+                }
+                
+                // ====== 巨兽追击逻辑 ======
+                if (!gameState.isWinning && gameState.swimming && gameState.leviathan && !gameState.isCaught) {
+                    gameState.leviathan.userData.active = true;
+                    
+                    const dx = gameState.player.x - gameState.leviathan.position.x;
+                    const dz = gameState.player.z - gameState.leviathan.position.z;
+                    const dist = Math.sqrt(dx*dx + dz*dz);
+                    
+                    if (dist > 5) {
+                        const moveSpeed = 0.5;
+                        gameState.leviathan.position.x += (dx/dist) * moveSpeed;
+                        gameState.leviathan.position.z += (dz/dist) * moveSpeed;
+                    } else {
+                        gameState.isCaught = true;
+                        catchStartTime = now;
+                        document.getElementById('caughtMessage').style.display = 'block';
+                    }
+                    
+                    gameState.leviathan.lookAt(gameState.player.x, 0, gameState.player.z);
+                } else if (gameState.leviathan) {
+                    gameState.leviathan.userData.active = false;
+                }
+                
+                gameState.nearItem = null;
+                gameState.nearBoat = false;
+                gameState.nearHouse = false;
+                
+                const px = gameState.player.x;
+                const pz = gameState.player.z;
+                
+                gameState.sceneItems.forEach(item => {
+                    if (item.position && Math.hypot(px - item.position.x, pz - item.position.z) < 2.5) {
+                        gameState.nearItem = item;
+                    }
+                });
+                
+                gameState.boats.forEach(boat => {
+                    const dist = Math.hypot(px - boat.position.x, pz - boat.position.z);
+                    if (dist < 8) gameState.nearBoat = true;
+                });
+                
+                const houseDist = Math.hypot(px - gameState.housePos.x, pz - gameState.housePos.z);
+                if (houseDist < 25) gameState.nearHouse = true;
+                
+                let hintText = '';
+                if (gameState.nearHouse) {
+                    hintText = '🏠 进入房子';
+                } else if (gameState.nearBoat && gameState.onIsland) {
+                    hintText = '🛶 上船';
+                } else if (gameState.inBoat) {
+                    hintText = '🏝️ 靠近小岛可下船';
+                } else if (gameState.nearItem) {
+                    const type = gameState.nearItem.userData.type;
+                    if (type === 'flashlight') hintText = '🔦 捡起手电筒';
+                    else if (type === 'almond') hintText = '💧 捡起杏仁水';
+                    else if (type === 'pain') hintText = '🔴 捡起痛苦液态';
+                }
+                
+                document.getElementById('interactionHint').style.display = hintText ? 'block' : 'none';
+                document.getElementById('interactionHint').textContent = hintText || '🔍';
+                
+                gameState.sanity -= gameState.sanityDrainRate * deltaTime;
+                gameState.sanity = Math.max(0, Math.min(100, gameState.sanity));
+                
+                if(gameState.sanity <= 0) {
+                    gameState.isAlive = false;
+                    document.getElementById('sanityDeathMessage').style.display = 'block';
+                }
+                
+                updateUI();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                updatePlayer();
+                renderer.render(scene, camera);
+            }
+
+            buildScene();
+            applyQualitySettings('high');
+            updateUI();
+            initDevTools();
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        })();
+    </script>
+</body>
+</html>
