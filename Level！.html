@@ -1382,8 +1382,13 @@
                     }
                 }
                 
-                camera.position.set(gameState.player.x, gameState.player.y + 0.2, gameState.player.z + 2);
-                camera.rotation.set(0, gameState.rotationY, 0);
+                // 相机位置 - 放在身体前面上方
+camera.position.set(
+    gameState.player.x, 
+    gameState.player.y + 0.2, 
+    gameState.player.z + 1.5
+);
+camera.rotation.set(0, gameState.rotationY, 0);
                 
                 if (!gameState.monsterActive && gameState.player.z > 50) {
                     gameState.monsterActive = true;
@@ -1544,8 +1549,7 @@ function createPlayerBody() {
     // 整体缩小2倍
     group.scale.set(0.5, 0.5, 0.5);
     
-    // 旋转180度，让模型的正面指向 -z（与相机视线一致）
-    group.rotation.y = Math.PI;
+    
     
     return group;
 }
