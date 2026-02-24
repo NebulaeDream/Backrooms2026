@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Backroom 2026 1.0</title>
-    <link rel="manifest" href="manifest.json">
     <style>
         /* ==================== 你的原有样式，一字未改 ==================== */
         * {

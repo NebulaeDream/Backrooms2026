@@ -1,0 +1,2083 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>后室·终章 - 双窃皮者</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background: #2a1a0a;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+        
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background: #2a1a0a;
+        }
+        
+        #ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        #inventory {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            background: rgba(10, 10, 10, 0.9);
+            padding: 8px;
+            border-radius: 16px;
+            border: 3px solid #FFD700;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .inventory-slot {
+            width: 55px;
+            height: 55px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 2px solid #B8860B;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: #FFD700;
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
+        }
+        
+        .inventory-slot.has-item {
+            border-color: #32CD32;
+            box-shadow: 0 0 15px #32CD32;
+        }
+        
+        .inventory-slot.active {
+            border-color: #FFD700;
+            box-shadow: 0 0 20px gold;
+            transform: scale(1.08);
+        }
+        
+        #controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 2000;
+            pointer-events: auto;
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #FFD700;
+            border-radius: 20px;
+            color: #FFD700;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 0 #8B4513;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .control-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #8B4513;
+            background: #B8860B;
+            color: #1a1a1a;
+        }
+        
+        #jumpBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 140px;
+            width: 70px;
+            height: 70px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #FFD700;
+            border-radius: 20px;
+            color: #FFD700;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 5px 0 #8B4513;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #jumpBtn:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #8B4513;
+            background: #B8860B;
+        }
+        
+        #crouchBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 220px;
+            width: 70px;
+            height: 70px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #00aaff;
+            border-radius: 20px;
+            color: #aaddff;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 5px 0 #2b5a5a;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #crouchBtn:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #2b5a5a;
+            background: #00aaff;
+            color: #1a1a1a;
+        }
+        
+        #crouchBtn.active {
+            background: #00aaff;
+            color: #1a1a1a;
+            border-color: #ffffff;
+        }
+        
+        #interactBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 85px;
+            height: 85px;
+            background: rgba(255, 215, 0, 0.95);
+            border: 4px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 45px;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 6px 0 #8B4513;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #interactBtn:active {
+            transform: translateY(6px);
+            box-shadow: 0 1px 0 #8B4513;
+            background: #FFD700;
+        }
+        
+        #useBtn {
+            position: fixed;
+            top: 120px;
+            right: 15px;
+            width: 60px;
+            height: 60px;
+            background: #4CAF50;
+            border: 3px solid white;
+            border-radius: 16px;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 5px 0 #2d6a2d;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #useBtn:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #2d6a2d;
+        }
+        
+        #dropBtn {
+            position: fixed;
+            top: 120px;
+            right: 85px;
+            width: 60px;
+            height: 60px;
+            background: #ff4444;
+            border: 3px solid white;
+            border-radius: 16px;
+            color: white;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 5px 0 #aa2222;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #dropBtn:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #aa2222;
+        }
+        
+        #flashlightToggleBtn {
+            position: fixed;
+            bottom: 110px;
+            right: 35px;
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 215, 0, 0.95);
+            border: 3px solid #fffbe3;
+            border-radius: 50%;
+            font-size: 28px;
+            color: #1a1a1a;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            box-shadow: 0 5px 0 #8B4513;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        .touch-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 500;
+            background: transparent;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        
+        .status-display {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: rgba(10, 10, 10, 0.9);
+            color: #FFD700;
+            padding: 15px 20px;
+            border-radius: 16px;
+            border: 3px solid #B8860B;
+            font-size: 16px;
+            z-index: 2000;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            min-width: 220px;
+        }
+        
+        .status-display div {
+            margin-bottom: 8px;
+        }
+        
+        #interactionHint {
+            position: fixed;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 20, 20, 0.95);
+            color: #FFD700;
+            padding: 15px 30px;
+            border-radius: 50px;
+            display: none;
+            font-size: 20px;
+            font-weight: bold;
+            border: 3px solid #FFD700;
+            z-index: 2000;
+            pointer-events: none;
+            text-shadow: 0 2px 0 #000;
+        }
+        
+        #settingsBtn {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 3px solid #FFD700;
+            border-radius: 14px;
+            color: #FFD700;
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            box-shadow: 0 5px 0 #8B4513;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton {
+            position: fixed;
+            top: 75px;
+            right: 15px;
+            width: 50px;
+            height: 50px;
+            background: #FFD700;
+            border: 3px solid white;
+            border-radius: 14px;
+            color: black;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3001;
+            box-shadow: 0 5px 0 #B8860B;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        
+        #devTButton:active {
+            transform: translateY(5px);
+            box-shadow: 0 1px 0 #B8860B;
+        }
+        
+        #devConsole {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 20, 0.98);
+            border: 3px solid #FFD700;
+            border-radius: 20px;
+            padding: 30px;
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 0 40px rgba(255,215,0,0.5);
+            pointer-events: auto;
+            width: 80%;
+            max-width: 380px;
+        }
+        
+        #devConsole input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: #333;
+            border: 2px solid #FFD700;
+            border-radius: 12px;
+            color: white;
+            outline: none;
+        }
+        
+        #devConsole button {
+            background: #FFD700;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            color: black;
+            cursor: pointer;
+            border-bottom: 4px solid #B8860B;
+        }
+        
+        #devConsole button:active {
+            transform: translateY(3px);
+            border-bottom: none;
+        }
+        
+        #winMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 40px;
+            border-radius: 30px;
+            font-size: 28px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #4169E1;
+            color: #4169E1;
+            pointer-events: auto;
+        }
+        
+        #winMessage button {
+            margin-top: 25px;
+            padding: 15px 40px;
+            background: #FFD700;
+            border: none;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #1a1a1a;
+            border-bottom: 4px solid #B8860B;
+            cursor: pointer;
+        }
+        
+        #deathMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 10, 0.98);
+            padding: 35px;
+            border-radius: 25px;
+            font-size: 24px;
+            text-align: center;
+            display: none;
+            z-index: 6000;
+            border: 3px solid #ff0000;
+            color: #ff6666;
+            pointer-events: auto;
+        }
+        
+        #deathMessage button {
+            margin-top: 25px;
+            padding: 15px 40px;
+            background: #ff4444;
+            border: none;
+            border-radius: 50px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            border-bottom: 4px solid #aa2222;
+            cursor: pointer;
+        }
+        
+        #caughtMessage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(150, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 30px;
+            font-size: 28px;
+            text-align: center;
+            display: none;
+            z-index: 7000;
+            border: 3px solid #ff0000;
+            color: white;
+            pointer-events: none;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        
+        #deathOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0044aa;
+            display: none;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        #tapeCounter {
+            position: fixed;
+            top: 15px;
+            right: 80px;
+            background: rgba(10, 10, 10, 0.9);
+            color: #FFD700;
+            padding: 12px 25px;
+            border-radius: 40px;
+            border: 3px solid #FFD700;
+            font-size: 22px;
+            font-weight: bold;
+            z-index: 2000;
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(255,215,0,0.3);
+        }
+        
+        .sanity-bar {
+            width: 100%;
+            height: 10px;
+            background: rgba(50, 50, 50, 0.8);
+            border-radius: 5px;
+            margin-top: 5px;
+            overflow: hidden;
+            border: 1px solid #B8860B;
+        }
+        
+        .sanity-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00c8ff, #00ffaa);
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+        
+        #crouchStatus {
+            color: #aaddff;
+        }
+        
+        #timerDisplay {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 10, 10, 0.9);
+            color: #FFD700;
+            padding: 12px 25px;
+            border-radius: 40px;
+            border: 3px solid #FFD700;
+            font-size: 22px;
+            font-weight: bold;
+            z-index: 2000;
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(255,215,0,0.3);
+        }
+        
+        .portal-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            filter: blur(50px);
+            animation: pulseGlow 2s infinite;
+            pointer-events: none;
+            z-index: 5000;
+            display: none;
+        }
+        
+        @keyframes pulseGlow {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.3; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="ui">
+        <!-- 8格物品栏 -->
+        <div id="inventory">
+            <div class="inventory-slot" id="slot1"></div>
+            <div class="inventory-slot" id="slot2"></div>
+            <div class="inventory-slot" id="slot3"></div>
+            <div class="inventory-slot" id="slot4"></div>
+            <div class="inventory-slot" id="slot5"></div>
+            <div class="inventory-slot" id="slot6"></div>
+            <div class="inventory-slot" id="slot7"></div>
+            <div class="inventory-slot" id="slot8"></div>
+        </div>
+        
+        <div id="controls">
+            <div class="control-group"><button class="control-btn" id="forwardBtn">▲</button></div>
+            <div class="control-group">
+                <button class="control-btn" id="leftBtn">◀</button>
+                <button class="control-btn" id="backwardBtn">▼</button>
+                <button class="control-btn" id="rightBtn">▶</button>
+            </div>
+        </div>
+        
+        <button id="jumpBtn">⬆️</button>
+        <button id="crouchBtn">⬇️</button>
+        <button id="interactBtn">✋</button>
+        <button id="useBtn">存入</button>
+        <button id="dropBtn">🗑️</button>
+        <button id="flashlightToggleBtn">🔦</button>
+        <button id="settingsBtn">⚙️</button>
+        <button id="devTButton">T</button>
+        
+        <div id="interactionHint">🔍 点击手掌交互</div>
+        
+        <div class="status-display">
+            <div>💧 杏仁水: <span id="almondCount">0</span></div>
+            <div>🔦 手电筒: <span id="flashlightCount">0</span></div>
+            <div>🧠 理智: <span id="sanityPercent">100%</span></div>
+            <div class="sanity-bar"><div id="sanityFill" class="sanity-fill" style="width:100%"></div></div>
+            <div>⬇️ <span id="crouchStatus">站立</span></div>
+        </div>
+        
+        <div id="tapeCounter">📼 0/10</div>
+        <div id="timerDisplay">⏰ 30s</div>
+    </div>
+    
+    <!-- 电脑光圈特效 -->
+    <div id="portalGlow" class="portal-glow"></div>
+    
+    <div id="deathOverlay"></div>
+    
+    <div id="caughtMessage"><div style="font-size:32px; margin-bottom:12px;">👾 被抓住了！</div></div>
+    
+    <div id="winMessage">
+        <h2>🎉 逃脱成功</h2>
+        <p>你逃离了图书馆！</p>
+        <button onclick="location.reload()">再来一局</button>
+    </div>
+    
+    <div id="deathMessage">
+        <h2>请稍后…</h2>
+        <p>已触发切出替代结局</p>
+        
+    </div>
+    
+    <div id="devConsole">
+        <div style="color:#FFD700; font-size:22px; font-weight:bold;">⚡ 开发者</div>
+        <input type="text" id="devInput" placeholder="tapes (直接获得10个磁带)">
+        <button id="closeDevBtn">关闭</button>
+    </div>
+    
+    <div class="touch-area" id="touchArea"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        (function() {
+            "use strict";
+
+            // ==================== 游戏状态 ====================
+            const gameState = {
+                player: { x: 20, y: 1.6, z: 20 },
+                rotationY: 0,
+                tapes: 0,
+                almondWater: 0,
+                flashlights: 0,
+                sanity: 100,
+                sanityDrainRate: 0.05,
+                isAlive: true,
+                activeSlot: -1,
+                flashlightSlotIndex: -1,
+                flashlightOn: false,
+                hasFlashlight: false,
+                isJumping: false,
+                jumpVelocity: 0,
+                onGround: true,
+                isCrouching: false,
+                targetHeight: 1.6,
+                isCaught: false,
+                catchStartTime: 0,
+                nearItem: null,
+                nearComputer: false,
+                portalTriggered: false,
+                
+                // 计时器
+                startTime: Date.now(),
+                lightsOut: false,
+                
+                // 窃皮者列表
+                skinStealers: [],
+                
+                // 物品列表
+                itemsList: [],
+                
+                // 障碍物
+                obstacles: [],
+                
+                // 桌子列表
+                tables: [],
+                
+                // 第一个窃皮者激活计时器
+                firstSpawnTimer: 10,
+                firstSpawned: false
+            };
+
+            // ==================== Three.js 初始化 ====================
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2a1a0a);
+            
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(20, 1.8, 20);
+            
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gameCanvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = false;
+            renderer.setClearColor(0x2a1a0a);
+
+            // ==================== 灯光 ====================
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+            
+            const dirLight2 = new THREE.DirectionalLight(0xfff5e6, 0.8);
+            dirLight2.position.set(-10, 20, -10);
+            scene.add(dirLight2);
+
+            // 玩家手电筒
+            const playerFlashlight = new THREE.SpotLight(0xfff0b0, 3.0);
+            playerFlashlight.angle = 0.4;
+            playerFlashlight.penumbra = 0.3;
+            playerFlashlight.distance = 50;
+            playerFlashlight.decay = 1;
+            scene.add(playerFlashlight);
+            playerFlashlight.visible = false;
+            
+            const playerFlashlightTarget = new THREE.Object3D();
+            playerFlashlight.target = playerFlashlightTarget;
+            scene.add(playerFlashlightTarget);
+
+            // 第二个窃皮者的手电筒
+            const stealerFlashlight = new THREE.SpotLight(0xffaa00, 2.5);
+            stealerFlashlight.angle = 0.4;
+            stealerFlashlight.penumbra = 0.3;
+            stealerFlashlight.distance = 40;
+            stealerFlashlight.decay = 1;
+            scene.add(stealerFlashlight);
+            stealerFlashlight.visible = false;
+            
+            const stealerFlashlightTarget = new THREE.Object3D();
+            stealerFlashlight.target = stealerFlashlightTarget;
+            scene.add(stealerFlashlightTarget);
+
+            // ==================== 手持物品容器 ====================
+            const heldItemContainer = new THREE.Group();
+
+            function createHeldItemModel(type) {
+                while(heldItemContainer.children.length > 0) {
+                    heldItemContainer.remove(heldItemContainer.children[0]);
+                }
+                
+                if (!type) return;
+                
+                let model;
+                if (type === '🧪') {
+                    model = new THREE.Group();
+                    const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.22, 0.8, 8), canMat);
+                    body.position.y = 0.4;
+                    model.add(body);
+                    
+                    const topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                    const top = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.1, 6), topMat);
+                    top.position.y = 0.85;
+                    model.add(top);
+                }
+                else if (type === '🔦') {
+                    model = new THREE.Group();
+                    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.2, 8), bodyMat);
+                    body.rotation.x = Math.PI / 2;
+                    body.position.set(0, 0, 0);
+                    model.add(body);
+                    
+                    const headMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8), headMat);
+                    head.rotation.x = Math.PI / 2;
+                    head.position.set(0, 0, 0.7);
+                    model.add(head);
+                }
+                
+                if (model) {
+                    model.scale.set(0.4, 0.4, 0.4);
+                    model.rotation.set(0.2, 0.5, 0.1);
+                    heldItemContainer.add(model);
+                }
+            }
+
+            heldItemContainer.position.set(0.6, -0.4, -0.8);
+            camera.add(heldItemContainer);
+            scene.add(camera);
+
+            // ==================== 玩家身体 ====================
+            const playerBody = new THREE.Group();
+            
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0xffaa33 });
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.4), torsoMat);
+            torso.position.y = 0.7;
+            playerBody.add(torso);
+            
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xff9933 });
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.4), headMat);
+            head.position.y = 1.5;
+            playerBody.add(head);
+            
+            const maskMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const mask = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), maskMat);
+            mask.position.set(0, 1.5, 0.25);
+            playerBody.add(mask);
+            
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftArm.position.set(-0.6, 1.0, 0);
+            playerBody.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightArm.position.set(0.6, 1.0, 0);
+            playerBody.add(rightArm);
+            
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            leftLeg.position.set(-0.25, -0.3, 0);
+            playerBody.add(leftLeg);
+            
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+            rightLeg.position.set(0.25, -0.3, 0);
+            playerBody.add(rightLeg);
+            
+            scene.add(playerBody);
+
+            // ==================== 创建玩家身体的副本 ====================
+            function createPlayerBodyCopy(hasFlashlight = false) {
+                const group = new THREE.Group();
+                
+                const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.4), torsoMat);
+                torso.position.y = 0.7;
+                group.add(torso);
+                
+                const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.6, 0.4), headMat);
+                head.position.y = 1.5;
+                group.add(head);
+                
+                const mask = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.3, 0.1), maskMat);
+                mask.position.set(0, 1.5, 0.25);
+                group.add(mask);
+                
+                const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+                leftArm.position.set(-0.6, 1.0, 0);
+                group.add(leftArm);
+                
+                const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+                rightArm.position.set(0.6, 1.0, 0);
+                group.add(rightArm);
+                
+                const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+                leftLeg.position.set(-0.25, -0.3, 0);
+                group.add(leftLeg);
+                
+                const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.0, 0.3), torsoMat);
+                rightLeg.position.set(0.25, -0.3, 0);
+                group.add(rightLeg);
+                
+                group.scale.set(1.2, 1.2, 1.2);
+                return group;
+            }
+
+            // ==================== 创建窃皮者真身 ====================
+            function createSkinStealer() {
+                const group = new THREE.Group();
+                
+                const whiteMat = new THREE.MeshStandardMaterial({ 
+                    color: 0xffffff,
+                    emissive: 0x442222,
+                    emissiveIntensity: 0.2
+                });
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0x550000 });
+                
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.9, 8, 6), whiteMat);
+                head.position.y = 3.0;
+                group.add(head);
+                
+                const eye1 = new THREE.Mesh(new THREE.SphereGeometry(0.18, 4), eyeMat);
+                eye1.position.set(-0.35, 3.2, 0.8);
+                group.add(eye1);
+                
+                const eye2 = new THREE.Mesh(new THREE.SphereGeometry(0.18, 4), eyeMat);
+                eye2.position.set(0.35, 3.2, 0.8);
+                group.add(eye2);
+                
+                for (let i = 0; i < 8; i++) {
+ const mouth = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.15 + i*0.03, 0.08, 0.15),
+                        new THREE.MeshStandardMaterial({ color: 0xff4444 })
+                    );
+                    mouth.position.set(0, 2.7 - i * 0.3, 0.7);
+                    group.add(mouth);
+                }
+                
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2.2, 5), whiteMat);
+                body.position.y = 1.2;
+                group.add(body);
+                
+                const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 2.0, 4), whiteMat);
+                leftArm.position.set(-0.9, 2.0, 0);
+                leftArm.rotation.z = 0.4;
+                leftArm.rotation.x = 0.2;
+                group.add(leftArm);
+                
+                const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 2.0, 4), whiteMat);
+                rightArm.position.set(0.9, 2.0, 0);
+                rightArm.rotation.z = -0.4;
+                rightArm.rotation.x = -0.2;
+                group.add(rightArm);
+                
+                const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.8, 4), whiteMat);
+                leftLeg.position.set(-0.4, -0.5, 0);
+                group.add(leftLeg);
+                
+                const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1.8, 4), whiteMat);
+                rightLeg.position.set(0.4, -0.5, 0);
+                group.add(rightLeg);
+                
+                group.scale.set(1.3, 1.3, 1.3);
+                
+                group.userData = {
+                    speed: 0.28,
+                    range: 45,
+                    chaseRange: 70,
+                    isChasing: false,
+                    isPouncing: false,
+                    pounceStartTime: 0,
+                    originalY: 0.5,
+                    wanderTarget: null,
+                    wanderTimer: 0
+                };
+                
+                return group;
+            }
+
+            // ==================== 地板和边界 ====================
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x5d3a1a });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = 0;
+            scene.add(floor);
+
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+            const walls = [
+                { x: 0, z: -100, w: 200, h: 12, d: 2 },
+                { x: 0, z: 100, w: 200, h: 12, d: 2 },
+                { x: -100, z: 0, w: 2, h: 12, d: 200 },
+                { x: 100, z: 0, w: 2, h: 12, d: 200 }
+            ];
+            
+            walls.forEach(w => {
+                const wall = new THREE.Mesh(new THREE.BoxGeometry(w.w, w.h, w.d), wallMat);
+                wall.position.set(w.x, w.h/2, w.z);
+                scene.add(wall);
+                gameState.obstacles.push({ x: w.x, z: w.z, w: w.w, d: w.d });
+            });
+
+            const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x5d3a1a });
+            const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), ceilingMat);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = 12;
+            scene.add(ceiling);
+
+            // ==================== 创建矮书架 ====================
+            function createBookshelf(x, z, rotation = 0, height = 4) {
+                const group = new THREE.Group();
+                const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                const shelfMat = new THREE.MeshStandardMaterial({ color: 0xA0522D });
+                
+                const leftPost = new THREE.Mesh(new THREE.BoxGeometry(0.4, height, 0.4), woodMat);
+                leftPost.position.set(-1.5, height/2, 0);
+                group.add(leftPost);
+                
+                const rightPost = new THREE.Mesh(new THREE.BoxGeometry(0.4, height, 0.4), woodMat);
+                rightPost.position.set(1.5, height/2, 0);
+                group.add(rightPost);
+                
+                const back = new THREE.Mesh(new THREE.BoxGeometry(3.2, height, 0.2), woodMat);
+                back.position.set(0, height/2, -0.7);
+                group.add(back);
+                
+                const layerCount = Math.floor(height / 1.5);
+                for (let i = 0; i < layerCount; i++) {
+                    const y = 0.5 + i * 1.2;
+                    const shelf = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.2, 0.8), shelfMat);
+                    shelf.position.set(0, y, 0);
+                    group.add(shelf);
+                }
+                
+                const top = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.3, 0.8), woodMat);
+                top.position.set(0, height - 0.15, 0);
+                group.add(top);
+                
+                group.position.set(x, 0, z);
+                group.rotation.y = rotation;
+                
+                gameState.obstacles.push({ x: x, z: z, w: 3.2, d: 0.8 });
+                return group;
+            }
+
+            // ==================== 创建大桌子 ====================
+            function createTable(x, z, rotation = 0) {
+                const group = new THREE.Group();
+                const woodMat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+                
+                const top = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.2, 2.0), woodMat);
+                top.position.y = 1.2;
+                group.add(top);
+                
+                const legPositions = [
+                    [-1.2, 0.5, -0.8],
+                    [1.2, 0.5, -0.8],
+                    [-1.2, 0.5, 0.8],
+                    [1.2, 0.5, 0.8]
+                ];
+                
+                legPositions.forEach(pos => {
+                    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.0, 0.2), woodMat);
+                    leg.position.set(pos[0], pos[1], pos[2]);
+                    group.add(leg);
+                });
+                
+                group.position.set(x, 0, z);
+                group.rotation.y = rotation;
+                
+                gameState.tables.push({
+                    position: { x: x, z: z },
+                    width: 3.0,
+                    depth: 2.0,
+                    obj: group
+                });
+                
+                return group;
+            }
+
+            // ==================== 创建磁带 ====================
+            function createTape(x, z, y) {
+                const group = new THREE.Group();
+                const tapeMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                const labelMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+                
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.6), tapeMat);
+                body.position.y = 0;
+                group.add(body);
+                
+                const label = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.05, 0.4), labelMat);
+                label.position.y = 0.03;
+                group.add(label);
+                
+                group.position.set(x, y, z);
+                group.userData = { type: 'tape', collected: false };
+                return group;
+            }
+
+            // ==================== 创建杏仁水 ====================
+            function createAlmondWater(x, z, y) {
+                const group = new THREE.Group();
+                const canMat = new THREE.MeshStandardMaterial({ color: 0xffdd00 });
+                const capMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+                
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.18, 0.6, 8), canMat);
+                body.position.y = 0.3;
+                group.add(body);
+                
+                const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.1, 6), capMat);
+                cap.position.y = 0.6;
+                group.add(cap);
+                
+                group.position.set(x, y, z);
+                group.userData = { type: 'almond', collected: false };
+                return group;
+            }
+
+            // ==================== 创建手电筒 ====================
+            function createFlashlightItem(x, z, y) {
+                const group = new THREE.Group();
+                const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                const headMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                
+                const body = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 1.0, 8), bodyMat);
+                body.rotation.x = Math.PI / 2;
+                body.position.set(0, 0.2, 0);
+                group.add(body);
+                
+                const head = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.3, 8), headMat);
+                head.rotation.x = Math.PI / 2;
+                head.position.set(0, 0.2, 0.65);
+                group.add(head);
+                
+                group.position.set(x, y, z);
+                group.userData = { type: 'flashlight', collected: false };
+                return group;
+            }
+
+            // ==================== 电脑柜台 ====================
+            function createComputerDesk() {
+                const group = new THREE.Group();
+                const deskMat = new THREE.MeshStandardMaterial({ color: 0x696969 });
+                const computerMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                const screenMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+                
+                const base = new THREE.Mesh(new THREE.BoxGeometry(4, 0.5, 2), deskMat);
+                base.position.y = 0.25;
+                group.add(base);
+                
+                const top = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.2, 2.2), deskMat);
+                top.position.y = 0.8;
+                group.add(top);
+                
+                const computer = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.6), computerMat);
+                computer.position.set(-1, 1.4, -0.3);
+                group.add(computer);
+                
+                const monitorBase = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.4), computerMat);
+                monitorBase.position.set(0.8, 1.2, -0.2);
+                group.add(monitorBase);
+                
+                const monitorScreen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.1), screenMat);
+                monitorScreen.position.set(0.8, 1.7, -0.2);
+                group.add(monitorScreen);
+                
+                group.position.set(60, 0, 60);
+                group.userData = { type: 'computer' };
+                gameState.obstacles.push({ x: 60, z: 60, w: 4.5, d: 2.2 });
+                return group;
+            }
+
+            // ==================== 创建所有书架、桌子和物品 ====================
+            function createBookshelvesAndTapes() {
+                const positions = [];
+                
+                for (let i = 0; i < 40; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 160;
+                        z = (Math.random() - 0.5) * 160;
+                    } while (Math.abs(x) < 15 && Math.abs(z) < 15);
+                    
+                    const rotation = Math.random() * Math.PI * 2;
+                    const height = 3 + Math.random() * 2;
+                    positions.push({ x, z, rotation, height });
+                }
+                
+                positions.forEach(pos => {
+                    const shelf = createBookshelf(pos.x, pos.z, pos.rotation, pos.height);
+                    scene.add(shelf);
+                });
+                
+                // 创建10个磁带
+                for (let tapeIdx = 0; tapeIdx < 10; tapeIdx++) {
+                    const pos = positions[tapeIdx % positions.length];
+                    const layer = Math.floor(Math.random() * (pos.height / 1.2)) + 1;
+                    const y = 0.5 + layer * 1.0;
+                    
+                    let x = pos.x;
+                    let z = pos.z;
+                    
+                    if (Math.abs(pos.rotation) < 0.1) z += 0.3;
+                    else if (Math.abs(pos.rotation - Math.PI) < 0.1) z -= 0.3;
+                    else if (Math.abs(pos.rotation - Math.PI/2) < 0.1) x += 0.3;
+                    else x -= 0.3;
+                    
+                    const tape = createTape(x, z, y);
+                    scene.add(tape);
+                    gameState.itemsList.push(tape);
+                }
+                
+                // 添加杏仁水和手电筒
+                for (let i = 0; i < 15; i++) {
+                    const pos = positions[(i + 10) % positions.length];
+                    const layer = Math.floor(Math.random() * (pos.height / 1.2)) + 1;
+                    const y = 0.5 + layer * 1.0;
+                    
+                    let x = pos.x;
+                    let z = pos.z;
+                    
+                    if (Math.abs(pos.rotation) < 0.1) z += 0.3;
+                    else if (Math.abs(pos.rotation - Math.PI) < 0.1) z -= 0.3;
+                    else if (Math.abs(pos.rotation - Math.PI/2) < 0.1) x += 0.3;
+                    else x -= 0.3;
+                    
+                    if (Math.random() < 0.5) {
+                        const almond = createAlmondWater(x, z, y);
+                        scene.add(almond);
+                        gameState.itemsList.push(almond);
+                    } else {
+                        const flashlight = createFlashlightItem(x, z, y);
+                        scene.add(flashlight);
+                        gameState.itemsList.push(flashlight);
+                    }
+                }
+            }
+
+            // ==================== 创建大桌子群 ====================
+            function createTables() {
+                for (let i = 0; i < 15; i++) {
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 150;
+                        z = (Math.random() - 0.5) * 150;
+                    } while (Math.abs(x) < 15 && Math.abs(z) < 15);
+                    
+                    const rotation = Math.random() * Math.PI * 2;
+                    const table = createTable(x, z, rotation);
+                    scene.add(table);
+                }
+            }
+
+            // ==================== 初始化窃皮者 ====================
+            function initSkinStealers() {
+                const stealer1Player = createPlayerBodyCopy(false);
+                stealer1Player.position.set(-80, 0.5, -80);
+                stealer1Player.visible = false;
+                scene.add(stealer1Player);
+                
+                const stealer1Monster = createSkinStealer();
+                stealer1Monster.position.copy(stealer1Player.position);
+                stealer1Monster.visible = false;
+                scene.add(stealer1Monster);
+                
+                gameState.skinStealers.push({
+                    playerForm: stealer1Player,
+                    monsterForm: stealer1Monster,
+                    currentForm: 'player',
+                    state: 'wander',
+                    isChasing: false,
+                    isPouncing: false,
+                    pounceStartTime: 0,
+                    wanderTarget: null,
+                    wanderTimer: 0,
+                    id: 0,
+                    active: false
+                });
+                
+                const stealer2Player = createPlayerBodyCopy(true);
+                stealer2Player.visible = false;
+                scene.add(stealer2Player);
+                
+                const stealer2Monster = createSkinStealer();
+                stealer2Monster.visible = false;
+                scene.add(stealer2Monster);
+                
+                gameState.skinStealers.push({
+                    playerForm: stealer2Player,
+                    monsterForm: stealer2Monster,
+                    currentForm: 'player',
+                    state: 'wander',
+                    isChasing: false,
+                    isPouncing: false,
+                    pounceStartTime: 0,
+                    wanderTarget: null,
+                    wanderTimer: 0,
+                    id: 1,
+                    active: false,
+                    hasFlashlight: true
+                });
+            }
+// ============= 在这里添加三个新函数 =============
+function startFallingSequence() {
+    // 隐藏所有物体
+    scene.children.forEach(child => {
+        if (child !== camera && child !== playerBody) {
+            child.visible = false;
+        }
+    });
+    
+    // 创建城市天空
+    scene.background.setHex(0x87CEEB);
+    
+    // 创建高楼大厦
+    const buildingMat = new THREE.MeshStandardMaterial({ color: 0x88aaff });
+    for (let i = 0; i < 30; i++) {
+        const x = (Math.random() - 0.5) * 300;
+        const z = (Math.random() - 0.5) * 300;
+        const height = 20 + Math.random() * 50;
+        
+        const building = new THREE.Mesh(new THREE.BoxGeometry(5, height, 5), buildingMat);
+        building.position.set(x, -500 + height/2, z);
+        scene.add(building);
+    }
+    
+    // 开始坠落
+    const startY = 500;
+    const endY = -500;
+    const duration = 10000;
+    const startTime = Date.now();
+    
+    function fall() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        
+        camera.position.y = startY - (startY - endY) * progress;
+        camera.position.x = Math.sin(elapsed * 0.01) * 20;
+        camera.position.z = Math.cos(elapsed * 0.01) * 20;
+        
+        camera.rotation.z = Math.sin(elapsed * 0.02) * 0.1;
+        
+        if (progress < 1) {
+            requestAnimationFrame(fall);
+        } else {
+            startGlitchEffect();
+        }
+    }
+    
+    fall();
+}
+
+function startGlitchEffect() {
+    camera.position.set(0, 0, 5);
+    camera.rotation.set(0, 0, 0);
+    
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), roadMat);
+    road.rotation.x = -Math.PI / 2;
+    road.position.y = -0.5;
+    scene.add(road);
+    
+    let glitchCount = 0;
+    
+    function glitch() {
+        if (glitchCount < 10) {
+            camera.rotation.z = (Math.random() - 0.5) * 0.3;
+            camera.rotation.x = (Math.random() - 0.5) * 0.2;
+            scene.background.setRGB(Math.random(), Math.random(), Math.random());
+            
+            glitchCount++;
+            setTimeout(glitch, 100);
+        } else {
+            createCarCrash();
+        }
+    }
+    
+    glitch();
+}
+
+function createCarCrash() {
+    scene.background.setRGB(0.2, 0.2, 0.2);
+    
+    const carGroup = new THREE.Group();
+    
+    const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 4), new THREE.MeshStandardMaterial({ color: 0xff3333 }));
+    body.position.y = 0.4;
+    carGroup.add(body);
+    
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 2), new THREE.MeshStandardMaterial({ color: 0xcc3333 }));
+    roof.position.set(0, 1.0, -0.5);
+    carGroup.add(roof);
+    
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+    const wheelPositions = [[-0.8, 0.2, 1.2], [0.8, 0.2, 1.2], [-0.8, 0.2, -1.2], [0.8, 0.2, -1.2]];
+    
+    wheelPositions.forEach(pos => {
+        const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 8), wheelMat);
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(pos[0], pos[1], pos[2]);
+        carGroup.add(wheel);
+    });
+    
+    carGroup.position.set(-30, 0, 0);
+    scene.add(carGroup);
+    
+    const startTime = Date.now();
+    
+    function drive() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(1, elapsed / 2000);
+        
+        carGroup.position.x = -30 + 60 * progress;
+        
+        if (progress < 1) {
+            requestAnimationFrame(drive);
+        } else {
+            document.getElementById('deathMessage').style.display = 'block';
+            gameState.isAlive = false;
+        }
+    }
+    
+    drive();
+}
+            // ==================== 关灯并激活第二个窃皮者 ====================
+            function turnOffLights() {
+                gameState.lightsOut = true;
+                
+                ambientLight.intensity = 0.05;
+                dirLight.intensity = 0.05;
+                dirLight2.intensity = 0.05;
+                
+                if (gameState.skinStealers[1] && !gameState.skinStealers[1].active) {
+                    const stealer = gameState.skinStealers[1];
+                    
+                    let x, z;
+                    do {
+                        x = (Math.random() - 0.5) * 140;
+                        z = (Math.random() - 0.5) * 140;
+                    } while (Math.abs(x) < 30 && Math.abs(z) < 30);
+                    
+                    stealer.playerForm.position.set(x, 0.5, z);
+                    stealer.playerForm.visible = true;
+                    stealer.active = true;
+                }
+                
+                document.getElementById('timerDisplay').style.color = '#ff0000';
+                document.getElementById('timerDisplay').innerHTML = '⚠️ 极度黑暗 ⚠️';
+            }
+
+            // ==================== 碰撞检测 ====================
+            function checkCollision(newX, newZ, useSmallRadius = false) {
+                const r = useSmallRadius ? 0.3 : 0.5;
+                
+                if (Math.abs(newX) > 95 || Math.abs(newZ) > 95) return true;
+                
+                for (let obs of gameState.obstacles) {
+                    const left = obs.x - obs.w/2 - r;
+                    const right = obs.x + obs.w/2 + r;
+                    const top = obs.z - obs.d/2 - r;
+                    const bottom = obs.z + obs.d/2 + r;
+                    
+                    if (newX > left && newX < right && newZ > top && newZ < bottom) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // ==================== 检测是否在桌子下 ====================
+            function isUnderTable() {
+                if (!gameState.isCrouching) return false;
+                
+                for (let table of gameState.tables) {
+                    const dx = Math.abs(gameState.player.x - table.position.x);
+                    const dz = Math.abs(gameState.player.z - table.position.z);
+                    
+                    if (dx < table.width/2 + 1.5 && dz < table.depth/2 + 1.0) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // ==================== 更新UI ====================
+            function updateUI() {
+                document.getElementById('tapeCounter').innerHTML = `📼 ${gameState.tapes}/10`;
+                document.getElementById('sanityPercent').textContent = Math.floor(gameState.sanity) + '%';
+                document.getElementById('sanityFill').style.width = gameState.sanity + '%';
+                document.getElementById('crouchStatus').textContent = gameState.isCrouching ? '蹲下' : '站立';
+                document.getElementById('almondCount').textContent = gameState.almondWater;
+                document.getElementById('flashlightCount').textContent = gameState.flashlights;
+                
+                const elapsed = (Date.now() - gameState.startTime) / 1000;
+                const remaining = Math.max(0, 30 - elapsed);
+                document.getElementById('timerDisplay').innerHTML = `⏰ ${remaining.toFixed(1)}s`;
+                
+                if (remaining <= 0 && !gameState.lightsOut) {
+                    turnOffLights();
+                }
+                
+                if (gameState.isCrouching) {
+                    document.getElementById('crouchBtn').classList.add('active');
+                } else {
+                    document.getElementById('crouchBtn').classList.remove('active');
+                }
+                
+                for(let i=1;i<=8;i++) {
+                    const slot = document.getElementById('slot'+i);
+                    slot.textContent = '';
+                    slot.classList.remove('has-item', 'active');
+                }
+                
+                let slotIdx = 0;
+                
+                for(let i=0; i<gameState.almondWater; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🧪';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        slotIdx++;
+                    }
+                }
+                
+                for(let i=0; i<gameState.flashlights; i++) {
+                    if(slotIdx<8) {
+                        document.getElementById('slot'+(slotIdx+1)).textContent = '🔦';
+                        document.getElementById('slot'+(slotIdx+1)).classList.add('has-item');
+                        gameState.flashlightSlotIndex = slotIdx;
+                        slotIdx++;
+                    }
+                }
+                
+                if(gameState.activeSlot !== -1) {
+                    const active = document.getElementById('slot'+(gameState.activeSlot+1));
+                    if(active) active.classList.add('active');
+                }
+                
+                const fb = document.getElementById('flashlightToggleBtn');
+                if(gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlights > 0) {
+                    fb.style.display = 'flex';
+                    fb.innerHTML = gameState.flashlightOn ? '🔦' : '🔦';
+                    fb.style.background = gameState.flashlightOn ? '#ffaa00' : '#444';
+                } else {
+                    fb.style.display = 'none';
+                }
+                
+                updateHeldItem();
+                
+                // 在 updateUI() 函数末尾添加这段
+if (gameState.tapes === 10 && !gameState.portalTriggered) {
+    // 获取电脑屏幕的世界坐标并转换为屏幕坐标
+    if (computer) {
+        const vector = new THREE.Vector3();
+        computer.getWorldPosition(vector);
+        vector.project(camera);
+        
+        const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+        
+        const glow = document.getElementById('portalGlow');
+        glow.style.display = 'block';
+        glow.style.left = x + 'px';
+        glow.style.top = y + 'px';
+    }
+}
+            }
+
+            function handleJump() {
+                if(gameState.onGround && !gameState.isCaught && !gameState.isCrouching) {
+                    gameState.isJumping = true;
+                    gameState.jumpVelocity = 0.28;
+                    gameState.onGround = false;
+                }
+            }
+
+            function handleCrouch() {
+                gameState.isCrouching = !gameState.isCrouching;
+                gameState.targetHeight = gameState.isCrouching ? 0.8 : 1.6;
+            }
+
+            function updateCrouch() {
+                if (Math.abs(gameState.player.y - gameState.targetHeight) > 0.01) {
+                    gameState.player.y += (gameState.targetHeight - gameState.player.y) * 0.1;
+                }
+            }
+
+            function updateJump() {
+                if(gameState.isJumping) {
+                    gameState.player.y += gameState.jumpVelocity;
+                    gameState.jumpVelocity -= 0.016;
+                    if(gameState.player.y <= gameState.targetHeight) {
+                        gameState.player.y = gameState.targetHeight;
+                        gameState.isJumping = false;
+                        gameState.jumpVelocity = 0;
+                        gameState.onGround = true;
+                    }
+                }
+            }
+
+            function updateHeldItem() {
+                if (gameState.activeSlot === -1) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                
+                const slot = document.getElementById('slot' + (gameState.activeSlot + 1));
+                if (!slot || !slot.classList.contains('has-item')) {
+                    createHeldItemModel(null);
+                    return;
+                }
+                
+                const itemType = slot.textContent;
+                createHeldItemModel(itemType);
+            }
+
+            function dropItem() {
+                if(!gameState.isAlive || gameState.isCaught) return;
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement || !slotElement.classList.contains('has-item')) return;
+                
+                const itemType = slotElement.textContent;
+                
+                if (itemType === '🧪' && gameState.almondWater > 0) {
+                    gameState.almondWater--;
+                    const almond = createAlmondWater(gameState.player.x, gameState.player.z, 0.5);
+                    scene.add(almond);
+                    gameState.itemsList.push(almond);
+                    gameState.activeSlot = -1;
+                    updateUI();
+                } else if (itemType === '🔦' && gameState.flashlights > 0) {
+                    gameState.flashlights--;
+                    const flashlight = createFlashlightItem(gameState.player.x, gameState.player.z, 0.5);
+                    scene.add(flashlight);
+                    gameState.itemsList.push(flashlight);
+                    gameState.activeSlot = -1;
+                    updateUI();
+                }
+            }
+
+            function useItem() {
+                if(!gameState.isAlive || gameState.isCaught) return;
+                
+                if (gameState.nearComputer && gameState.tapes < 10) {
+                    gameState.tapes++;
+                    updateUI();
+                    return;
+                }
+                
+                const activeSlot = gameState.activeSlot;
+                if(activeSlot === -1) return;
+                
+                const slotElement = document.getElementById('slot'+(activeSlot+1));
+                if(!slotElement) return;
+                
+                const itemType = slotElement.textContent;
+                
+                if (itemType === '🧪' && gameState.almondWater > 0) {
+                    gameState.almondWater--;
+                    gameState.sanity = Math.min(100, gameState.sanity + 40);
+                    updateUI();
+                }
+            }
+
+            function interactHandler() {
+    if(!gameState.isAlive || gameState.isCaught) return;
+    
+    if (gameState.nearComputer && gameState.tapes === 10 && !gameState.portalTriggered) {
+        gameState.portalTriggered = true;
+        document.getElementById('winMessage').style.display = 'none'; // 隐藏胜利消息
+        startFallingSequence(); // 直接开始坠落动画
+        gameState.isAlive = false;
+        return;
+    }
+                
+                if(gameState.nearItem) {
+                    const item = gameState.nearItem;
+                    if (!item.userData.collected) {
+                        const type = item.userData.type;
+                        
+                        if (type === 'tape') {
+                            item.userData.collected = true;
+                            item.visible = false;
+                            gameState.tapes++;
+                        } else if (type === 'almond') {
+                            item.userData.collected = true;
+                            item.visible = false;
+                            gameState.almondWater++;
+                            gameState.sanity = Math.min(100, gameState.sanity + 30);
+                        } else if (type === 'flashlight') {
+                            item.userData.collected = true;
+                            item.visible = false;
+                            gameState.flashlights++;
+                        }
+                        
+                        updateUI();
+                        const idx = gameState.itemsList.indexOf(item);
+                        if(idx > -1) gameState.itemsList.splice(idx, 1);
+                        gameState.nearItem = null;
+                    }
+                }
+            }
+
+            function initDevTools() {
+                const devTButton = document.getElementById('devTButton');
+                const devConsole = document.getElementById('devConsole');
+                const devInput = document.getElementById('devInput');
+                const closeBtn = document.getElementById('closeDevBtn');
+                
+                devTButton.addEventListener('click', () => {
+                    devConsole.style.display = 'flex';
+                });
+                
+                devInput.addEventListener('keypress', (e) => {
+                    if(e.key === 'Enter') {
+                        const cmd = e.target.value.trim();
+                        if(cmd === 'tapes') {
+                            gameState.tapes = 10;
+                            updateUI();
+                            devConsole.style.display = 'none';
+                            e.target.value = '';
+                        } else {
+                            alert('未知命令');
+                        }
+                    }
+                });
+                
+                closeBtn.addEventListener('click', () => {
+                    devConsole.style.display = 'none';
+                    devInput.value = '';
+                });
+            }
+
+            const touchArea = document.getElementById('touchArea');
+            let lastX = 0;
+            
+            touchArea.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+            
+            touchArea.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - lastX;
+                gameState.rotationY -= dx * 0.01;
+                lastX = e.touches[0].clientX;
+            }, { passive: false });
+
+            const keys = { w: false, s: false, a: false, d: false };
+            
+            document.addEventListener('keydown', (e) => {
+                if(gameState.isCaught || !gameState.isAlive) return;
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = true;
+                    e.preventDefault();
+                } else if(k === ' ') {
+                    handleJump();
+                    e.preventDefault();
+                } else if(k === 'c') {
+                    handleCrouch();
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                const k = e.key.toLowerCase();
+                if(k === 'w' || k === 'a' || k === 's' || k === 'd') {
+                    keys[k] = false;
+                    e.preventDefault();
+                }
+            });
+            
+            document.getElementById('forwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); keys.w = true; });
+            document.getElementById('forwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.w = false; });
+            document.getElementById('backwardBtn').addEventListener('touchstart', (e) => { e.preventDefault(); keys.s = true; });
+            document.getElementById('backwardBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.s = false; });
+            document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); keys.a = true; });
+            document.getElementById('leftBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.a = false; });
+            document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); keys.d = true; });
+            document.getElementById('rightBtn').addEventListener('touchend', (e) => { e.preventDefault(); keys.d = false; });
+            
+            document.getElementById('jumpBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleJump(); });
+            document.getElementById('crouchBtn').addEventListener('touchstart', (e) => { e.preventDefault(); handleCrouch(); });
+            
+            document.getElementById('interactBtn').addEventListener('click', interactHandler);
+            document.getElementById('interactBtn').addEventListener('touchstart', (e) => { e.preventDefault(); interactHandler(); });
+            
+            document.getElementById('useBtn').addEventListener('click', useItem);
+            document.getElementById('useBtn').addEventListener('touchstart', (e) => { e.preventDefault(); useItem(); });
+            
+            document.getElementById('dropBtn').addEventListener('click', dropItem);
+            document.getElementById('dropBtn').addEventListener('touchstart', (e) => { e.preventDefault(); dropItem(); });
+            
+            document.getElementById('flashlightToggleBtn').addEventListener('click', () => {
+                if(gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlights > 0) {
+                    gameState.flashlightOn = !gameState.flashlightOn;
+                }
+                updateUI();
+            });
+            
+            document.querySelectorAll('.inventory-slot').forEach((slot, idx) => {
+                slot.addEventListener('click', () => {
+                    if(slot.classList.contains('has-item')) {
+                        document.querySelectorAll('.inventory-slot').forEach(s => s.classList.remove('active'));
+                        slot.classList.add('active');
+                        gameState.activeSlot = idx;
+                    }
+                    updateUI();
+                });
+            });
+
+            const deathOverlay = document.getElementById('deathOverlay');
+            const caughtMessage = document.getElementById('caughtMessage');
+
+            function startDeathSequence() {
+                deathOverlay.style.display = 'block';
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
+            }
+
+            let lastTime = performance.now();
+            let computer;
+            
+            function updatePlayer() {
+                const now = performance.now();
+                const deltaTime = Math.min(0.1, (now - lastTime) / 1000);
+                lastTime = now;
+                
+                if(!gameState.isAlive) return;
+                
+                if (!gameState.firstSpawned) {
+                    gameState.firstSpawnTimer -= deltaTime;
+                    if (gameState.firstSpawnTimer <= 0) {
+                        gameState.firstSpawned = true;
+                        if (gameState.skinStealers[0]) {
+                            gameState.skinStealers[0].active = true;
+                            gameState.skinStealers[0].playerForm.visible = true;
+                        }
+                    }
+                }
+                
+                const underTable = isUnderTable();
+                
+                if(gameState.isCaught) {
+                    if(gameState.catchStartTime === 0) gameState.catchStartTime = now;
+                    const caughtElapsed = now - gameState.catchStartTime;
+                    
+                    caughtMessage.style.display = 'block';
+                    
+                    if(caughtElapsed >= 1000) {
+                        startDeathSequence();
+                    }
+                    return;
+                }
+                
+                updateCrouch();
+                updateJump();
+                
+                if(gameState.flashlightOn && gameState.activeSlot === gameState.flashlightSlotIndex && gameState.flashlights > 0) {
+                    playerFlashlight.visible = true;
+                    playerFlashlight.position.copy(camera.position);
+                    playerFlashlightTarget.position.set(
+                        camera.position.x - Math.sin(gameState.rotationY) * 15,
+                        camera.position.y - 0.2,
+                        camera.position.z - Math.cos(gameState.rotationY) * 15
+                    );
+                } else {
+                    playerFlashlight.visible = false;
+                }
+                
+                const speed = gameState.isCrouching ? 0.15 : 0.22;
+                let nx = gameState.player.x, nz = gameState.player.z;
+                
+                if(keys.w) { nx -= Math.sin(gameState.rotationY) * speed; nz -= Math.cos(gameState.rotationY) * speed; }
+                if(keys.s) { nx += Math.sin(gameState.rotationY) * speed; nz += Math.cos(gameState.rotationY) * speed; }
+                if(keys.a) { nx -= Math.cos(gameState.rotationY) * speed; nz += Math.sin(gameState.rotationY) * speed; }
+                if(keys.d) { nx += Math.cos(gameState.rotationY) * speed; nz -= Math.sin(gameState.rotationY) * speed; }
+                
+                if(!checkCollision(nx, nz, false)) {
+                    gameState.player.x = nx;
+                    gameState.player.z = nz;
+                }
+                
+                const bodyOffset = 2.0;
+                playerBody.position.set(
+                    gameState.player.x + Math.sin(gameState.rotationY) * bodyOffset,
+                    gameState.player.y - 0.8,
+                    gameState.player.z + Math.cos(gameState.rotationY) * bodyOffset
+                );
+                playerBody.rotation.y = gameState.rotationY;
+                
+                camera.position.set(
+                    gameState.player.x, 
+                    gameState.player.y + 0.2, 
+                    gameState.player.z + 1.5
+                );
+                camera.rotation.set(0, gameState.rotationY, 0);
+                
+                gameState.skinStealers.forEach(stealer => {
+                    if (!stealer.active) return;
+                    
+                    const dx = gameState.player.x - stealer.playerForm.position.x;
+                    const dz = gameState.player.z - stealer.playerForm.position.z;
+                    const dist = Math.sqrt(dx*dx + dz*dz);
+                    
+                    const canSeePlayer = dist < 25 && !underTable;
+                    
+                    if (canSeePlayer && stealer.state === 'wander') {
+                        stealer.state = 'chasing';
+                        stealer.playerForm.visible = true;
+                        stealer.monsterForm.visible = false;
+                        stealer.currentForm = 'player';
+                    }
+                    
+                    if (stealer.state === 'wander') {
+                        stealer.playerForm.visible = true;
+                        stealer.monsterForm.visible = false;
+                        
+                        stealer.wanderTimer += deltaTime;
+                        
+                        if (!stealer.wanderTarget || stealer.wanderTimer > 5) {
+                            stealer.wanderTarget = {
+                                x: (Math.random() - 0.5) * 140,
+                                z: (Math.random() - 0.5) * 140
+                            };
+                            stealer.wanderTimer = 0;
+                        }
+                        
+                        if (stealer.wanderTarget) {
+                            const tx = stealer.wanderTarget.x - stealer.playerForm.position.x;
+                            const tz = stealer.wanderTarget.z - stealer.playerForm.position.z;
+                            const tDist = Math.sqrt(tx*tx + tz*tz);
+                            
+                            if (tDist > 1) {
+                                const moveX = (tx / tDist) * 0.08;
+                                const moveZ = (tz / tDist) * 0.08;
+                                
+                                let newX = stealer.playerForm.position.x + moveX;
+                                let newZ = stealer.playerForm.position.z + moveZ;
+                                
+                                if (!checkCollision(newX, newZ, true)) {
+                                    stealer.playerForm.position.x = newX;
+                                    stealer.playerForm.position.z = newZ;
+                                }
+                                
+                                stealer.playerForm.rotation.y = Math.atan2(tx, tz);
+                            }
+                        }
+                        
+                        if (stealer.id === 1 && stealer.active && stealer.state === 'wander') {
+                            stealerFlashlight.visible = true;
+                            stealerFlashlight.position.copy(stealer.playerForm.position);
+                            stealerFlashlight.position.y = 1.8;
+                            
+                            const lookX = stealer.playerForm.position.x - Math.sin(stealer.playerForm.rotation.y) * 10;
+                            const lookZ = stealer.playerForm.position.z - Math.cos(stealer.playerForm.rotation.y) * 10;
+                            stealerFlashlightTarget.position.set(lookX, 1.5, lookZ);
+                        } else {
+                            stealerFlashlight.visible = false;
+                        }
+                        
+                        gameState.sanity -= gameState.sanityDrainRate * deltaTime;
+                    } 
+                    else if (stealer.state === 'chasing') {
+                        const currentForm = stealer.playerForm;
+                        
+                        if (dist > 2.5) {
+                            const moveX = (dx / dist) * 0.18;
+                            const moveZ = (dz / dist) * 0.18;
+                            
+                            let newX = currentForm.position.x + moveX;
+                            let newZ = currentForm.position.z + moveZ;
+                            
+                            if (!checkCollision(newX, newZ, true)) {
+                                currentForm.position.x = newX;
+                                currentForm.position.z = newZ;
+                            } else {
+                                stealer.state = 'wander';
+                            }
+                            
+                            currentForm.rotation.y = Math.atan2(dx, dz);
+                        }
+                        
+                        if (stealer.id === 1 && stealer.active) {
+                            stealerFlashlight.visible = true;
+                            stealerFlashlight.position.copy(currentForm.position);
+                            stealerFlashlight.position.y = 1.8;
+                            stealerFlashlightTarget.position.set(gameState.player.x, 1.5, gameState.player.z);
+                        }
+                        
+                        if (dist < 3.0 && !gameState.isCaught) {
+                            stealer.playerForm.visible = false;
+                            stealer.monsterForm.visible = true;
+                            stealer.monsterForm.position.copy(stealer.playerForm.position);
+                            stealer.monsterForm.userData.originalY = stealer.monsterForm.position.y;
+                            stealer.currentForm = 'monster';
+                            stealer.isPouncing = true;
+                            stealer.pounceStartTime = now;
+                            
+                            gameState.isCaught = true;
+                            gameState.catchStartTime = now;
+                        }
+                        
+                        gameState.sanity -= gameState.sanityDrainRate * deltaTime * 3;
+                    }
+                    
+                    if (underTable && stealer.state === 'chasing') {
+                        stealer.state = 'wander';
+                        if (stealer.currentForm === 'monster') {
+                            stealer.monsterForm.visible = false;
+                            stealer.playerForm.visible = true;
+                            stealer.currentForm = 'player';
+                        }
+                    }
+                });
+                
+                gameState.sanity = Math.max(0, Math.min(100, gameState.sanity));
+                
+                if (gameState.sanity <= 0) {
+                    gameState.isCaught = true;
+                    gameState.catchStartTime = now;
+                }
+                
+                gameState.nearItem = null;
+                gameState.itemsList.forEach(item => {
+                    const dist = Math.sqrt(
+                        (gameState.player.x - item.position.x)**2 + 
+                        (gameState.player.z - item.position.z)**2
+                    );
+                    if (dist < 2.5 && !item.userData.collected) {
+                        gameState.nearItem = item;
+                    }
+                });
+                
+                if (computer) {
+                    const dist = Math.sqrt(
+                        (gameState.player.x - computer.position.x)**2 + 
+                        (gameState.player.z - computer.position.z)**2
+                    );
+                    gameState.nearComputer = dist < 4.0;
+                }
+                
+                let hintText = '';
+                if (gameState.nearItem) {
+                    const type = gameState.nearItem.userData.type;
+                    if (type === 'tape') hintText = '📼 拿起磁带';
+                    else if (type === 'almond') hintText = '🧪 拿起杏仁水';
+                    else if (type === 'flashlight') hintText = '🔦 拿起手电筒';
+                } else if (gameState.nearComputer && gameState.tapes === 10) {
+                    hintText = '💫 进入传送门';
+                } else if (gameState.nearComputer && gameState.tapes < 10) {
+                    hintText = `💻 存入磁带 (${gameState.tapes}/10)`;
+                } else if (gameState.nearComputer) {
+                    hintText = '💻 需要磁带';
+                } else if (underTable) {
+                    hintText = '⬇️ 躲在桌子下 (安全)';
+                }
+                
+                document.getElementById('interactionHint').style.display = hintText ? 'block' : 'none';
+                document.getElementById('interactionHint').textContent = hintText || '🔍';
+                
+                updateUI();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                updatePlayer();
+                renderer.render(scene, camera);
+            }
+
+            // 初始化
+            createBookshelvesAndTapes();
+            createTables();
+            computer = createComputerDesk();
+            scene.add(computer);
+            
+            initSkinStealers();
+            
+            initDevTools();
+            updateUI();
+            animate();
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        })();
+    </script>
+</body>
+</html>
